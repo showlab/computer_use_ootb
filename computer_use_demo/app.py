@@ -47,6 +47,8 @@ def setup_state(state):
         state["api_key"] = load_from_storage("api_key") or os.getenv("ANTHROPIC_API_KEY", "")
         if not state["api_key"]:
             print("API key not found. Please set it in the environment or storage.")
+        else:
+            print(f"API key loaded: {state['api_key'][:5]}...{state['api_key'][-5:]}")
     if "provider" not in state:
         state["provider"] = os.getenv("API_PROVIDER", "anthropic") or APIProvider.ANTHROPIC
     if "provider_radio" not in state:

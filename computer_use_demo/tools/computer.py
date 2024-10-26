@@ -8,6 +8,8 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
+import io
+from PIL import Image
 
 from anthropic.types.beta import BetaToolComputerUse20241022Param
 
@@ -186,21 +188,18 @@ class ComputerTool(BaseAnthropicTool):
 
         raise ToolError(f"Invalid action: {action}")
 
-    async def screenshot(self):
-        """Take a screenshot of the current screen and return a ToolResult with the base64 encoded image."""
-        output_dir = Path(OUTPUT_DIR)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        path = output_dir / f"screenshot_{uuid4().hex}.png"
-
-        # Take screenshot using pyautogui
+    async def screenshot(self) -> ToolResult:
         screenshot = pyautogui.screenshot()
-        screenshot.save(str(path))
+        img_byte_arr = io.BytesIO()
+        screenshot.save(img_byte_arr, format='PNG')
+        img_byte_arr = img_byte_arr.getvalue()
 
-        if path.exists():
-            # Return a ToolResult instance instead of a dictionary
-            return ToolResult(base64_image=base64.b64encode(path.read_bytes()).decode())
-        
-        raise ToolError(f"Failed to take screenshot: {path} does not exist.")
+        # Resize the image if it's too large
+        if len(img_byte_arr) > 5 * 1024 * 1024:
+            img_byte_arr = self.resize_image(img_byte_arr)
+
+        base64_image = base64.b64encode(img_byte_arr).decode('utf-8')
+        return ToolResult(output="Screenshot taken", base64_image=base64_image)
 
     async def shell(self, command: str, take_screenshot=True) -> ToolResult:
         """Run a shell command and return the output, error, and optionally a screenshot."""
@@ -240,11 +239,20 @@ class ComputerTool(BaseAnthropicTool):
         return round(x * x_scaling_factor), round(y * y_scaling_factor)
 
     def get_screen_size(self):
-        if platform.system() == "Windows":
-            # Command to get screen resolution on Windows
+        if platform.system() == "Darwin":  # macOS
+            try:
+                output = subprocess.check_output(["system_profiler", "SPDisplaysDataType"]).decode('utf-8')
+                for line in output.split('\n'):
+                    if "Resolution" in line:
+                        resolution = line.split(':')[1].strip()
+                        width, height = map(lambda x: int(x.split()[0]), resolution.split(' x '))
+                        return width, height
+            except Exception as e:
+                print(f"Error getting screen size: {e}")
+                return 1920, 1080  # Default fallback resolution
+        elif platform.system() == "Windows":
+            # Keep existing Windows code
             cmd = "wmic path Win32_VideoController get CurrentHorizontalResolution,CurrentVerticalResolution"
-        elif platform.system() == "Darwin":  # macOS
-            cmd = "system_profiler SPDisplaysDataType | grep Resolution"
         else:  # Linux or other OS
             cmd = "xrandr | grep '*' | awk '{print $1}'"
 
@@ -254,9 +262,6 @@ class ComputerTool(BaseAnthropicTool):
             if platform.system() == "Windows":
                 lines = output.strip().split('\n')[1:]  # Skip the header
                 width, height = map(int, lines[0].split())
-            elif platform.system() == "Darwin":
-                resolution = output.split()[0]
-                width, height = map(int, resolution.split('x'))
             else:
                 resolution = output.strip().split()[0]
                 width, height = map(int, resolution.split('x'))
@@ -265,7 +270,7 @@ class ComputerTool(BaseAnthropicTool):
 
         except subprocess.CalledProcessError as e:
             print(f"Error occurred: {e}")
-            return None, None  # Return None or some default values
+            return 1920, 1080  # Default fallback resolution
         
     
     def get_mouse_position(self):
@@ -282,3 +287,19 @@ class ComputerTool(BaseAnthropicTool):
         # For simplicity, return text as is
         # Implement mapping if special keys are needed
         return text
+
+    def resize_image(self, image_data: bytes, max_size: int = 5 * 1024 * 1024) -> bytes:
+        img = Image.open(io.BytesIO(image_data))
+        
+        # Calculate the scaling factor
+        current_size = len(image_data)
+        scale_factor = (max_size / current_size) ** 0.5
+        
+        # Resize the image
+        new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
+        img = img.resize(new_size, Image.LANCZOS)
+        
+        # Save the resized image to a bytes buffer
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG", optimize=True)
+        return buffer.getvalue()
