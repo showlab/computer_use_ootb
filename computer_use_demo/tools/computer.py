@@ -282,4 +282,24 @@ class ComputerTool(BaseAnthropicTool):
         # Adjust for different coordinate system
         return int(loc.x), int(self.height - loc.y)
 
-    def ma
+    def map_keys(self, text: str):
+        """Map text to cliclick key codes if necessary."""
+        # For simplicity, return text as is
+        # Implement mapping if special keys are needed
+        return text
+
+    def resize_image(self, image_data: bytes, max_size: int = 5 * 1024 * 1024) -> bytes:
+        img = Image.open(io.BytesIO(image_data))
+        
+        # Calculate the scaling factor
+        current_size = len(image_data)
+        scale_factor = (max_size / current_size) ** 0.5
+        
+        # Resize the image
+        new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
+        img = img.resize(new_size, Image.LANCZOS)
+        
+        # Save the resized image to a bytes buffer
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG", optimize=True)
+        return buffer.getvalue()
