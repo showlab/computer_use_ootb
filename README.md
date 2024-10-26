@@ -3,6 +3,8 @@
 ## 🌟 Overview
 This is an out-of-the-box (OOTB) solution for Claude's new Computer Use APIs. 
 
+MacOS working version (tested on m1 retina)
+
 **No Docker** is required, and it theoretically supports **any platform**, with testing currently done on **Windows**. This project provides a user-friendly interface based on Gradio. 🎨
 
 ## Update
@@ -74,7 +76,7 @@ Desktop Interface
 - [ ] **Platform**
   - [x] **Windows** 
   - [x] **Mobile** (Send command)
-  - [ ] **Mac**
+  - [x] **Mac**
   - [ ] **Mobile** (Be controlled)
 - [ ] **Support for More MLLMs**
   - [x] **Claude 3.5 Sonnet** 🎵
