@@ -1,4 +1,4 @@
-# Computer Use - OOTB
+# Computer Use - OOTB MacOS working version (tested on m1 retina)
 
 ## 🌟 Overview
 This is an out-of-the-box (OOTB) solution for Claude's new Computer Use APIs. 
