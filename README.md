@@ -112,7 +112,14 @@ Welcome to discuss with us and continuously improve the user experience of Compu
 
 </div>
 
+### 5. Automate Setup on Windows 11 with PowerShell
+To automate the installation of dependencies and setup on Windows 11, you can use the provided PowerShell script `setup.ps1`.
 
-
-
-
+#### Steps to Run the PowerShell Script:
+1. Open PowerShell as Administrator.
+2. Navigate to the directory where you cloned the repository.
+3. Run the following command:
+```powershell
+.\setup.ps1
+```
+This script will install Miniconda, set up a Conda environment, install Python dependencies from `dev-requirements.txt`, and start the interface.
