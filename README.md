@@ -53,6 +53,15 @@ https://github.com/user-attachments/assets/f50b7611-2350-4712-af9e-3d31e30020ee
 
 ### 0. Prerequisites
 - Instal Miniconda on your system through this [link](https://www.anaconda.com/download?utm_source=anacondadocs&utm_medium=documentation&utm_campaign=download&utm_content=topnavalldocs). (**Python Version: >= 3.11**).
+- *Optional*: Configure your Anthropic API key as an environment variable to avoid entering your Anthropic API key into the application each time. The application will automatically use this key for authenticated requests.
+  - #### MacOS/Linux (Terminal):
+    ```bash
+    export ANTHROPIC_API_KEY="your-api-key-here"
+    ```
+  - #### Windows (Command Prompt or PowerShell):
+    ```bash
+    setx ANTHROPIC_API_KEY "your-api-key-here"
+    ```
 
 
 ### 1. Clone the Repository 📂
