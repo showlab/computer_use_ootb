@@ -12,3 +12,7 @@ gradio
 screeninfo
 uiautomation
 dashscope
+torch
+torchvision
+transformers
+qwen-vl-utils
