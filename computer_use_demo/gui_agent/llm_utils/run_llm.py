@@ -2,6 +2,7 @@ import base64
 import logging
 from .oai import run_oai_interleaved
 from .gemini import run_gemini_interleaved
+from .qwen import run_qwen
 
 def run_llm(prompt, llm="gpt-4o-mini", max_tokens=256, temperature=0, stop=None):
     log_prompt(prompt)
@@ -27,6 +28,14 @@ def run_llm(prompt, llm="gpt-4o-mini", max_tokens=256, temperature=0, stop=None)
         )
     elif llm.startswith("gemini"): # gemini series
         out = run_gemini_interleaved(
+            prompt, 
+            llm, 
+            max_tokens,
+            temperature, 
+            stop
+        )
+    elif llm.startswith("qwen"): # qwen series
+        out = run_qwen(
             prompt, 
             llm, 
             max_tokens,
