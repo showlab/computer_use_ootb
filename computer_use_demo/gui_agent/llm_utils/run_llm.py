@@ -14,6 +14,9 @@ def run_llm(prompt, llm="gpt-4o-mini", max_tokens=256, temperature=0, stop=None)
     else:
         raise ValueError(f"Invalid prompt type: {type(prompt)}")
     
+    # Optimize prompt for cost-efficiency
+    prompt = optimize_prompt(prompt)
+    
     if llm.startswith("gpt"): # gpt series
         out = run_oai_interleaved(
             prompt, 
@@ -41,4 +44,16 @@ def log_prompt(prompt):
     prompt_display = "\n\n".join(prompt_display)
     logging.info(
         f"========Prompt=======\n{prompt_display}\n============================")
-    
+
+def optimize_prompt(prompt):
+    """
+    Optimize the prompt to minimize token usage by using concise language and removing unnecessary details.
+    """
+    optimized_prompt = []
+    for p in prompt:
+        # Remove unnecessary details and focus on essential information
+        p = p.replace("Please", "").replace("kindly", "").replace("could you", "").replace("would you", "")
+        # Use abbreviations where appropriate
+        p = p.replace("information", "info").replace("application", "app")
+        optimized_prompt.append(p.strip())
+    return optimized_prompt

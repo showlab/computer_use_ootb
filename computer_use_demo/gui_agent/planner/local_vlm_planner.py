@@ -114,10 +114,10 @@ class LocalVLMPlanner:
             {
                 "role": "user",
                 "content": [
-                {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels": self.max_pixels},
+                {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels=self.max_pixels"},
                 {"type": "text", "text": f"Task: {''.join(planner_messages)}"}
             ],
-        }]
+        ]
         
         text = self.processor.apply_chat_template(
             messages_for_processor, tokenize=False, add_generation_prompt=True
