@@ -54,9 +54,18 @@ https://github.com/user-attachments/assets/f50b7611-2350-4712-af9e-3d31e30020ee
 - Hardware Requirements (optional, for ShowUI local-run):
     - **Windows (CUDA-enabled):** A compatible NVIDIA GPU with CUDA support, >=6GB GPU memory
     - **macOS (Apple Silicon):** M1 chip (or newer), >=16GB unified RAM
+ 
+
+### 1. Quickstart 📂
+Open the Conda Terminal. (After installation Of Miniconda, it will appear in the Start menu.)
+Run the following command on **Conda Terminal**.
+```bash
+pip install computer-use-ootb==0.0.5
+```
+Enjoy!
 
 
-### 1. Clone the Repository 📂
+### 2. Clone the Repository 📂
 Open the Conda Terminal. (After installation Of Miniconda, it will appear in the Start menu.)
 Run the following command on **Conda Terminal**.
 ```bash
@@ -64,12 +73,12 @@ git clone https://github.com/showlab/computer_use_ootb.git
 cd computer_use_ootb
 ```
 
-### 2.1 Install Dependencies 🔧
+### 3.1 Install Dependencies 🔧
 ```bash
 pip install -r dev-requirements.txt
 ```
 
-### 2.2 (Optional) Get Prepared for **<span style="color:rgb(106, 158, 210)">S</span><span style="color:rgb(111, 163, 82)">h</span><span style="color:rgb(209, 100, 94)">o</span><span style="color:rgb(238, 171, 106)">w</span>UI** Local-Run
+### 3.2 (Optional) Get Prepared for **<span style="color:rgb(106, 158, 210)">S</span><span style="color:rgb(111, 163, 82)">h</span><span style="color:rgb(209, 100, 94)">o</span><span style="color:rgb(238, 171, 106)">w</span>UI** Local-Run
 
 1. Download all files of the ShowUI-2B model via the following command. Ensure the `ShowUI-2B` folder is under the `computer_use_ootb` folder.
 
@@ -82,7 +91,7 @@ pip install -r dev-requirements.txt
 3. Get API Keys for [GPT-4o](https://platform.openai.com/docs/quickstart) or [Qwen-VL](https://help.aliyun.com/zh/dashscope/developer-reference/acquisition-and-configuration-of-api-key). For mainland China users, Qwen API free trial for first 1 mil tokens is [available](https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api).
 
 
-### 3. Start the Interface ▶️
+### 4. Start the Interface ▶️
 
 **Start the OOTB interface:**
 ```bash
@@ -104,7 +113,7 @@ If you successfully start the interface, you will see two URLs in the terminal:
 > On macOS/Linux, replace `$env:ANTHROPIC_API_KEY` with `export ANTHROPIC_API_KEY` in the above command. 
 
 
-### 4. Control Your Computer with Any Device can Access the Internet
+### 5. Control Your Computer with Any Device can Access the Internet
 - **Computer to be controlled**: The one installed software.
 - **Device Send Command**: The one opens the website.
   
