@@ -56,7 +56,7 @@ https://github.com/user-attachments/assets/f50b7611-2350-4712-af9e-3d31e30020ee
     - **macOS (Apple Silicon):** M1 chip (or newer), >=16GB unified RAM
  
 
-### 1. Quickstart 📂
+### 1. Quickstart 😎
 Open the Conda Terminal. (After installation Of Miniconda, it will appear in the Start menu.)
 Run the following command on **Conda Terminal**.
 ```bash
