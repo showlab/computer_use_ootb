@@ -312,6 +312,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                              "qwen2-vl-max + ShowUI",
                             #  "qwen-vl-7b-instruct + ShowUI",
                              "claude-3-5-sonnet-20241022",
+                             "gpt-4o-handheld",
+                             "qwen2-vl-handheld",
+                             "claude-3-5-handheld",
+                             "gpt-4o-sota",
+                             "qwen2-vl-sota",
+                             "claude-3-5-sota",
                              ],
                     value="gpt-4o + ShowUI",  # Set to one of the choices
                     interactive=True,
@@ -442,6 +448,36 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             provider_value = "anthropic"  # Set default to 'anthropic'
             provider_interactive = True
             api_key_placeholder = "claude API key"
+        elif model_selection == "gpt-4o-handheld":
+            provider_choices = ["openai"]
+            provider_value = "openai"
+            provider_interactive = False
+            api_key_placeholder = "openai API key"
+        elif model_selection == "qwen2-vl-handheld":
+            provider_choices = ["qwen"]
+            provider_value = "qwen"
+            provider_interactive = False
+            api_key_placeholder = "qwen API key"
+        elif model_selection == "claude-3-5-handheld":
+            provider_choices = [option.value for option in APIProvider if option.value != "openai"]
+            provider_value = "anthropic"
+            provider_interactive = True
+            api_key_placeholder = "claude API key"
+        elif model_selection == "gpt-4o-sota":
+            provider_choices = ["openai"]
+            provider_value = "openai"
+            provider_interactive = False
+            api_key_placeholder = "openai API key"
+        elif model_selection == "qwen2-vl-sota":
+            provider_choices = ["qwen"]
+            provider_value = "qwen"
+            provider_interactive = False
+            api_key_placeholder = "qwen API key"
+        elif model_selection == "claude-3-5-sota":
+            provider_choices = [option.value for option in APIProvider if option.value != "openai"]
+            provider_value = "anthropic"
+            provider_interactive = True
+            api_key_placeholder = "claude API key"
         else:
             # Default case
             provider_choices = [option.value for option in APIProvider]
@@ -489,6 +525,32 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 return gr.update(placeholder="")
         elif model_selection == "gpt-4o + ShowUI":
             return gr.update(placeholder="openai API key")
+        elif model_selection == "gpt-4o-handheld":
+            return gr.update(placeholder="openai API key")
+        elif model_selection == "qwen2-vl-handheld":
+            return gr.update(placeholder="qwen API key")
+        elif model_selection == "claude-3-5-handheld":
+            if provider_value == "anthropic":
+                return gr.update(placeholder="anthropic API key")
+            elif provider_value == "bedrock":
+                return gr.update(placeholder="bedrock API key")
+            elif provider_value == "vertex":
+                return gr.update(placeholder="vertex API key")
+            else:
+                return gr.update(placeholder="")
+        elif model_selection == "gpt-4o-sota":
+            return gr.update(placeholder="openai API key")
+        elif model_selection == "qwen2-vl-sota":
+            return gr.update(placeholder="qwen API key")
+        elif model_selection == "claude-3-5-sota":
+            if provider_value == "anthropic":
+                return gr.update(placeholder="anthropic API key")
+            elif provider_value == "bedrock":
+                return gr.update(placeholder="bedrock API key")
+            elif provider_value == "vertex":
+                return gr.update(placeholder="vertex API key")
+            else:
+                return gr.update(placeholder="")
         else:
             return gr.update(placeholder="")
         

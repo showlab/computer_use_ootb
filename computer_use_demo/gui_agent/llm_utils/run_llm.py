@@ -2,6 +2,7 @@ import base64
 import logging
 from .oai import run_oai_interleaved
 from .gemini import run_gemini_interleaved
+from .qwen import run_qwen
 
 def run_llm(prompt, llm="gpt-4o-mini", max_tokens=256, temperature=0, stop=None):
     log_prompt(prompt)
@@ -13,6 +14,9 @@ def run_llm(prompt, llm="gpt-4o-mini", max_tokens=256, temperature=0, stop=None)
         pass
     else:
         raise ValueError(f"Invalid prompt type: {type(prompt)}")
+    
+    # Optimize prompt for cost-efficiency
+    prompt = optimize_prompt(prompt)
     
     if llm.startswith("gpt"): # gpt series
         out = run_oai_interleaved(
@@ -30,6 +34,14 @@ def run_llm(prompt, llm="gpt-4o-mini", max_tokens=256, temperature=0, stop=None)
             temperature, 
             stop
         )
+    elif llm.startswith("qwen"): # qwen series
+        out = run_qwen(
+            prompt, 
+            llm, 
+            max_tokens,
+            temperature, 
+            stop
+        )
     else:
         raise ValueError(f"Invalid llm: {llm}")
     logging.info(
@@ -41,4 +53,16 @@ def log_prompt(prompt):
     prompt_display = "\n\n".join(prompt_display)
     logging.info(
         f"========Prompt=======\n{prompt_display}\n============================")
-    
+
+def optimize_prompt(prompt):
+    """
+    Optimize the prompt to minimize token usage by using concise language and removing unnecessary details.
+    """
+    optimized_prompt = []
+    for p in prompt:
+        # Remove unnecessary details and focus on essential information
+        p = p.replace("Please", "").replace("kindly", "").replace("could you", "").replace("would you", "")
+        # Use abbreviations where appropriate
+        p = p.replace("information", "info").replace("application", "app")
+        optimized_prompt.append(p.strip())
+    return optimized_prompt
