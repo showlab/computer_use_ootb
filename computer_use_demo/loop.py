@@ -78,7 +78,9 @@ def sampling_loop_sync(
     """
     Synchronous agentic sampling loop for the assistant/tool interaction of computer use.
     """
-    
+
+    showui_loop_count = 0
+
     if torch.cuda.is_available(): device = torch.device("cuda")
     elif torch.backends.mps.is_available(): device = torch.device("mps")
     else: device = torch.device("cpu") # support: 'cpu', 'mps', 'cuda'
