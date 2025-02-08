@@ -10,6 +10,7 @@ __pycache__
 /.gradio
 /.zed
 /showui*
+/ui-tars*
 /demo
 /Qwen*
 /install_tools/install_qwen*

@@ -37,20 +37,14 @@ class APIVLMPlanner:
         device: torch.device = torch.device("cpu"),
     ):
         self.device = device
-        if model == "gpt-4o + ShowUI":
+        if model == "gpt-4o":
             self.model = "gpt-4o-2024-11-20"
-        elif model == "gpt-4o-mini + ShowUI":
+        elif model == "gpt-4o-mini":
             self.model = "gpt-4o-mini"  # "gpt-4o-mini"
-        elif model == "qwen2-vl-max + ShowUI":
+        elif model == "qwen2-vl-max":
             self.model = "qwen2-vl-max"
-        elif model == "qwen-vl-7b-instruct + ShowUI":  # local model
+        elif model == "qwen-vl-7b-instruct":  # local model
             self.model = "qwen-vl-7b-instruct"
-            self.local_model = Qwen2VLForConditionalGeneration.from_pretrained(
-                # "Qwen/Qwen2-VL-7B-Instruct",
-                "./Qwen2-VL-7B-Instruct",
-                torch_dtype=torch.bfloat16,
-                device_map="cpu"
-            ).to(self.device)
             self.min_pixels = 256 * 28 * 28
             self.max_pixels = 1344 * 28 * 28
             self.processor = AutoProcessor.from_pretrained(
@@ -100,44 +94,7 @@ class APIVLMPlanner:
 
         print(f"Sending messages to VLMPlanner: {planner_messages}")
 
-        if self.model == "qwen-vl-7b-instruct":
-            
-            messages_for_processor = [
-                {
-                    "role": "system",
-                    "content": [{"type": "text", "text": self.system_prompt}]
-                },
-                {
-                    "role": "user",
-                    "content": [
-                    {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels": self.max_pixels},
-                    {"type": "text", "text": f"Task: {''.join(planner_messages)}"}
-                ],
-            }]
-            
-            text = self.processor.apply_chat_template(
-                messages_for_processor, tokenize=False, add_generation_prompt=True
-            )
-            image_inputs, video_inputs = process_vision_info(messages_for_processor)
-            
-            inputs = self.processor(
-                text=[text],
-                images=image_inputs,
-                videos=video_inputs,
-                padding=True,
-                return_tensors="pt",
-            )
-            inputs = inputs.to(self.device)
-
-            generated_ids = self.local_model.generate(**inputs, max_new_tokens=128)
-            generated_ids_trimmed = [
-                out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
-            ]
-            vlm_response = self.processor.batch_decode(
-                generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
-            )[0]
-
-        elif self.model == "gpt-4o-2024-11-20":
+        if self.model == "gpt-4o-2024-11-20":
             vlm_response, token_usage = run_oai_interleaved(
                 messages=planner_messages,
                 system=self.system_prompt,

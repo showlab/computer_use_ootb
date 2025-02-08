@@ -110,7 +110,6 @@ class ShowUIActor:
                     {"type": "text", "text": self.system_prompt},
                     {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels": self.max_pixels},
                     {"type": "text", "text": f"Task: {task}"}
-                    # {"type": "text", "text": f"\nAction History: {self.action_history}}
                 ],
             }
         ]

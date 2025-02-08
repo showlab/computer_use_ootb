@@ -17,13 +17,14 @@
 </h5>
 
 ## <img src="./assets/ootb_icon.png" alt="Star" style="height:25px; vertical-align:middle; filter: invert(1) brightness(2);">  Overview
-**Computer Use <span style="color:rgb(106, 158, 210)">O</span><span style="color:rgb(111, 163, 82)">O</span><span style="color:rgb(209, 100, 94)">T</span><span style="color:rgb(238, 171, 106)">B</span>**<img src="./assets/ootb_icon.png" alt="Star" style="height:20px; vertical-align:middle; filter: invert(1) brightness(2);"> is an out-of-the-box (OOTB) solution for Desktop GUI Agent, including API-based (**Claude 3.5 Computer Use**) and locally-running models (**<span style="color:rgb(106, 158, 210)">S</span><span style="color:rgb(111, 163, 82)">h</span><span style="color:rgb(209, 100, 94)">o</span><span style="color:rgb(238, 171, 106)">w</span>UI**). 
+**Computer Use <span style="color:rgb(106, 158, 210)">O</span><span style="color:rgb(111, 163, 82)">O</span><span style="color:rgb(209, 100, 94)">T</span><span style="color:rgb(238, 171, 106)">B</span>**<img src="./assets/ootb_icon.png" alt="Star" style="height:20px; vertical-align:middle; filter: invert(1) brightness(2);"> is an out-of-the-box (OOTB) solution for Desktop GUI Agent, including API-based (**Claude 3.5 Computer Use**) and locally-running models (**<span style="color:rgb(106, 158, 210)">S</span><span style="color:rgb(111, 163, 82)">h</span><span style="color:rgb(209, 100, 94)">o</span><span style="color:rgb(238, 171, 106)">w</span>UI**, **UI-TARS**). 
 
-**No Docker** is required, and it supports both **Windows** and **macOS**. This project provides a user-friendly interface based on Gradio. 🎨
+**No Docker** is required, and it supports both **Windows** and **macOS**. OOTB provides a user-friendly interface based on Gradio. 🎨
 
-For more information, you can visit our study on Claude 3.5 Computer Use [[project page]](https://computer-use-ootb.github.io). 🌐
+Visit our study on GUI Agent of Claude 3.5 Computer Use [[project page]](https://computer-use-ootb.github.io). 🌐
 
 ## Update
+- **[2025/02/08]** We've added the support for [**UI-TARS**](https://github.com/bytedance/UI-TARS). Follow [Cloud Deployment](https://github.com/bytedance/UI-TARS?tab=readme-ov-file#cloud-deployment) or [VLLM deployment](https://github.com/bytedance/UI-TARS?tab=readme-ov-file#local-deployment-vllm) to implement UI-TARS and run it locally in OOTB.
 - **Major Update! [2024/12/04]** **Local Run🔥** is now live! Say hello to [**<span style="color:rgb(106, 158, 210)">S</span><span style="color:rgb(111, 163, 82)">h</span><span style="color:rgb(209, 100, 94)">o</span><span style="color:rgb(238, 171, 106)">w</span>UI**](https://github.com/showlab/ShowUI), an open-source 2B vision-language-action (VLA) model for GUI Agent. Now compatible with `"gpt-4o + ShowUI" (~200x cheaper)`*  & `"Qwen2-VL + ShowUI" (~30x cheaper)`* for only few cents for each task💰! <span style="color: grey; font-size: small;">*compared to Claude Computer Use</span>.
 - **[2024/11/20]** We've added some examples to help you get hands-on experience with Claude 3.5 Computer Use.
 - **[2024/11/19]** Forget about the single-display limit set by Anthropic - you can now use **multiple displays** 🎉!
@@ -81,6 +82,12 @@ pip install -r dev-requirements.txt
 
 3. Get API Keys for [GPT-4o](https://platform.openai.com/docs/quickstart) or [Qwen-VL](https://help.aliyun.com/zh/dashscope/developer-reference/acquisition-and-configuration-of-api-key). For mainland China users, Qwen API free trial for first 1 mil tokens is [available](https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api).
 
+### 2.3 (Optional) Get Prepared for **UI-TARS** Local-Run
+
+1. Follow [Cloud Deployment](https://github.com/bytedance/UI-TARS?tab=readme-ov-file#cloud-deployment) or [VLLM deployment](https://github.com/bytedance/UI-TARS?tab=readme-ov-file#local-deployment-vllm) guides to deploy your UI-TARS server.
+
+2. Test your UI-TARS sever with the script `.\install_tools\test_ui-tars_server.py`.
+
 
 ### 3. Start the Interface ▶️
 
@@ -112,7 +119,6 @@ Open the website at http://localhost:7860/ (if you're controlling the computer i
 
 Enter the Anthropic API key (you can obtain it through this [website](https://console.anthropic.com/settings/keys)), then give commands to let the AI perform your tasks.
 
-
 ### ShowUI Advanced Settings
 
 We provide a 4-bit quantized ShowUI-2B model for cost-efficient inference (currently **only support CUDA devices**). To download the 4-bit quantized ShowUI-2B model:
@@ -122,6 +128,77 @@ python install_tools/install_showui-awq-4bit.py
 Then, enable the quantized setting in the 'ShowUI Advanced Settings' dropdown menu.
 
 Besides, we also provide a slider to quickly adjust the `max_pixel` parameter in the ShowUI model. This controls the visual input size of the model and greatly affects the memory and inference speed.
+
+## 📊 GUI Agent Model Zoo
+
+Now, OOTB supports customizing the GUI Agent via the following models:
+
+- **Unified Model**: Unified planner & actor, can both make the high-level planning and take the low-level control.
+- **Planner**: General-purpose LLMs, for handling the high-level planning and decision-making.
+- **Actor**: Vision-language-action models, for handling the low-level control and action command generation.
+
+
+<div align="center">
+  <b>Supported GUI Agent Models, OOTB</b>
+
+</div>
+<table align="center">
+  <tbody>
+    <tr align="center" valign="bottom">
+      <td>
+        <b>[API] Unified Model</b>
+      </td>
+      <td>
+        <b>[API] Planner</b>
+      </td>
+      <td>
+        <b>[Local] Planner</b>
+      </td>
+      <td>
+        <b>[API] Actor</b>
+      </td>
+      <td>
+        <b>[Local] Actor</b>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>
+        <ul>
+            <li><a href="">Claude 3.5 Sonnet</a></li>
+      </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="">GPT-4o</a></li>
+          <li><a href="">Qwen2-VL-Max</a></li>
+          <li><a href="">Deepseek V3 (soon)</a></li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="">Qwen2-VL-2B</a></li>
+          <li><a href="">Qwen2-VL-7B</a></li>
+        </ul>
+      </td>
+        <td>
+        <ul>
+          <li><a href="https://github.com/showlab/ShowUI">ShowUI</a></li>
+          <li><a href="https://huggingface.co/bytedance-research/UI-TARS-7B-DPO">UI-TARS-7B/72B-DPO (soon)</a></li> 
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="https://github.com/showlab/ShowUI">ShowUI</a></li>
+          <li><a href="https://huggingface.co/bytedance-research/UI-TARS-7B-DPO">UI-TARS-7B/72B-DPO</a></li>
+        </ul>
+      </td>
+    </tr>
+</td>
+</table>
+
+> where [API] models are based on API calling the LLMs that can inference remotely, 
+and [Local] models can use your own device that inferences locally with no API costs.
+
 
 
 ## 🖥️ Supported Systems
