@@ -88,7 +88,10 @@ pip install -r dev-requirements.txt
 
 2. Test your UI-TARS sever with the script `.\install_tools\test_ui-tars_server.py`.
 
+### 2.4 (Optional) If you want to deploy Qwen model as planner on ssh server
+1. git clone this project on your ssh server
 
+2. python computer_use_demo/remote_inference.py
 ### 3. Start the Interface ▶️
 
 **Start the OOTB interface:**
@@ -171,6 +174,9 @@ Now, OOTB supports customizing the GUI Agent via the following models:
         <ul>
           <li><a href="">GPT-4o</a></li>
           <li><a href="">Qwen2-VL-Max</a></li>
+          <li><a href="">Qwen2-VL-2B(ssh)</a></li>
+          <li><a href="">Qwen2-VL-7B(ssh)</a></li>
+          <li><a href="">Qwen2.5-VL-7B(ssh)</a></li>
           <li><a href="">Deepseek V3 (soon)</a></li>
         </ul>
       </td>

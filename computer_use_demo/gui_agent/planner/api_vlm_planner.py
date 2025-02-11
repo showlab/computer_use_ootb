@@ -11,7 +11,7 @@ from anthropic.types import TextBlock, ToolResultBlockParam
 from anthropic.types.beta import BetaMessage, BetaTextBlock, BetaToolUseBlock, BetaMessageParam
 
 from computer_use_demo.tools.screen_capture import get_screenshot
-from computer_use_demo.gui_agent.llm_utils.oai import run_oai_interleaved
+from computer_use_demo.gui_agent.llm_utils.oai import run_oai_interleaved, run_ssh_llm_interleaved
 from computer_use_demo.gui_agent.llm_utils.qwen import run_qwen
 from computer_use_demo.gui_agent.llm_utils.llm_utils import extract_data, encode_image
 from computer_use_demo.tools.colorful_text import colorful_text_showui, colorful_text_vlm
@@ -43,6 +43,12 @@ class APIVLMPlanner:
             self.model = "gpt-4o-mini"  # "gpt-4o-mini"
         elif model == "qwen2-vl-max":
             self.model = "qwen2-vl-max"
+        elif model == "qwen2-vl-2b (ssh)":
+            self.model = "Qwen2-VL-2B-Instruct"
+        elif model == "qwen2-vl-7b (ssh)":
+            self.model = "Qwen2-VL-7B-Instruct"
+        elif model == "qwen2.5-vl-7b (ssh)":
+            self.model = "Qwen2.5-VL-7B-Instruct"
         elif model == "qwen-vl-7b-instruct":  # local model
             self.model = "qwen-vl-7b-instruct"
             self.min_pixels = 256 * 28 * 28
@@ -119,6 +125,22 @@ class APIVLMPlanner:
             print(f"qwen token usage: {token_usage}")
             self.total_token_usage += token_usage
             self.total_cost += (token_usage * 0.02 / 7.25 / 1000)  # 1USD=7.25CNY, https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-qianwen-vl-plus-api
+        elif "Qwen" in self.model:
+            # 从api_key中解析host和port
+            try:
+                ssh_host, ssh_port = self.api_key.split(":")
+                ssh_port = int(ssh_port)
+            except ValueError:
+                raise ValueError("Invalid SSH connection string. Expected format: host:port")
+                
+            vlm_response, token_usage = run_ssh_llm_interleaved(
+                messages=planner_messages,
+                system=self.system_prompt,
+                llm=self.model,
+                ssh_host=ssh_host,
+                ssh_port=ssh_port,
+                max_tokens=self.max_tokens,
+            )
         else:
             raise ValueError(f"Model {self.model} not supported")
             
