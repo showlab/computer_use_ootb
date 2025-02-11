@@ -34,6 +34,7 @@ class APIProvider(StrEnum):
     VERTEX = "vertex"
     OPENAI = "openai"
     QWEN = "qwen"
+    SSH = "ssh"
 
 
 PROVIDER_TO_DEFAULT_MODEL_NAME: dict[APIProvider, str] = {
@@ -42,6 +43,7 @@ PROVIDER_TO_DEFAULT_MODEL_NAME: dict[APIProvider, str] = {
     APIProvider.VERTEX: "claude-3-5-sonnet-v2@20241022",
     APIProvider.OPENAI: "gpt-4o",
     APIProvider.QWEN: "qwen2vl",
+    APIProvider.SSH: "qwen2-vl-2b",
 }
 
 
@@ -113,6 +115,22 @@ def sampling_loop_sync(
 
     elif planner_model == "qwen2-vl-7b-instruct":
         planner = LocalVLMPlanner(
+            model=planner_model,
+            provider=planner_provider,
+            system_prompt_suffix=system_prompt_suffix,
+            api_key=api_key,
+            api_response_callback=api_response_callback,
+            selected_screen=selected_screen,
+            output_callback=output_callback,
+            device=device
+        )
+        loop_mode = "planner + actor"
+    elif "ssh" in planner_model:
+        if torch.cuda.is_available(): device = torch.device("cuda")
+        elif torch.backends.mps.is_available(): device = torch.device("mps")
+        else: device = torch.device("cpu") # support: 'cpu', 'mps', 'cuda'
+        logger.info(f"Model inited on device: {device}.")
+        planner = APIVLMPlanner(
             model=planner_model,
             provider=planner_provider,
             system_prompt_suffix=system_prompt_suffix,
