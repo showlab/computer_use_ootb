@@ -262,7 +262,15 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 # Planner
                 planner_model = gr.Dropdown(
                     label="Planner Model",
-                    choices=["gpt-4o", "gpt-4o-mini", "qwen2-vl-max", "qwen2-vl-2b (local)", "qwen2-vl-7b (local)", "claude-3-5-sonnet-20241022"],
+                    choices=["gpt-4o", 
+                             "gpt-4o-mini", 
+                             "qwen2-vl-max", 
+                             "qwen2-vl-2b (local)", 
+                             "qwen2-vl-7b (local)",
+                             "qwen2-vl-2b (ssh)", 
+                             "qwen2-vl-7b (ssh)",
+                             "qwen2.5-vl-7b (ssh)", 
+                             "claude-3-5-sonnet-20241022"],
                     value="gpt-4o",
                     interactive=True,
                 )
@@ -381,7 +389,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     def update_planner_model(model_selection, state):
         state["model"] = model_selection
-        logger.info(f"Model updated to: {state['model']}")
+        # Update planner_model
+        state["planner_model"] = model_selection
+        logger.info(f"Model updated to: {state['planner_model']}")
         
         if model_selection == "qwen2-vl-max":
             provider_choices = ["qwen"]
@@ -392,6 +402,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             actor_model_choices = ["ShowUI", "UI-TARS"]
             actor_model_value = "ShowUI"
             actor_model_interactive = True
+            api_key_type = "password"  # Display API key in password form
         
         elif model_selection == "qwen2-vl-2b (local)" or model_selection == "qwen2-vl-7b (local)":
             # Set provider to "openai", make it unchangeable
@@ -403,6 +414,23 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             actor_model_choices = ["ShowUI", "UI-TARS"]
             actor_model_value = "ShowUI"
             actor_model_interactive = True
+            api_key_type = "password"  # Maintain consistency
+
+        elif "ssh" in model_selection:
+            provider_choices = ["ssh"]
+            provider_value = "ssh"
+            provider_interactive = False
+            api_key_interactive = True
+            api_key_placeholder = "ssh host and port (e.g. localhost:8000)"
+            actor_model_choices = ["ShowUI", "UI-TARS"]
+            actor_model_value = "ShowUI"
+            actor_model_interactive = True
+            api_key_type = "text"  # Display SSH connection info in plain text
+            # If SSH connection info already exists, keep it
+            if "planner_api_key" in state and state["planner_api_key"]:
+                state["api_key"] = state["planner_api_key"]
+            else:
+                state["api_key"] = ""
 
         elif model_selection == "gpt-4o" or model_selection == "gpt-4o-mini":
             # Set provider to "openai", make it unchangeable
@@ -410,6 +438,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             provider_value = "openai"
             provider_interactive = False
             api_key_interactive = True
+            api_key_type = "password"  # Display API key in password form
 
             api_key_placeholder = "openai API key"
             actor_model_choices = ["ShowUI", "UI-TARS"]
@@ -426,6 +455,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             actor_model_choices = ["claude-3-5-sonnet-20241022"]
             actor_model_value = "claude-3-5-sonnet-20241022"
             actor_model_interactive = False
+            api_key_type = "password"  # Display API key in password form
 
         else:
             raise ValueError(f"Model {model_selection} not supported")
@@ -442,8 +472,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             state["api_key"] = state.get("qwen_api_key", "")
         elif provider_value == "local":
             state["api_key"] = ""
-        else:
-            state["api_key"] = ""
+        # SSH的情况已经在上面处理过了，这里不需要重复处理
 
         provider_update = gr.update(
             choices=provider_choices,
@@ -455,7 +484,8 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         api_key_update = gr.update(
             placeholder=api_key_placeholder,
             value=state["api_key"],
-            interactive=api_key_interactive
+            interactive=api_key_interactive,
+            type=api_key_type  # 添加 type 参数的更新
         )
 
         actor_model_update = gr.update(
@@ -464,6 +494,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             interactive=actor_model_interactive
         )
 
+        logger.info(f"Updated state: model={state['planner_model']}, provider={state['planner_api_provider']}, api_key={state['api_key']}")
         return provider_update, api_key_update, actor_model_update
     
     def update_actor_model(actor_model_selection, state):
@@ -518,6 +549,13 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 gr.update(interactive=True), 
                 gr.update(interactive=True)
             )
+
+    def update_api_key(api_key_value, state):
+        """Handle API key updates"""
+        state["planner_api_key"] = api_key_value
+        if state["planner_provider"] == "ssh":
+            state["api_key"] = api_key_value
+        logger.info(f"API key updated: provider={state['planner_provider']}, api_key={state['api_key']}")
 
     with gr.Accordion("Quick Start Prompt", open=False):  # open=False 表示默认收
         # Initialize Gradio interface with the dropdowns
@@ -583,6 +621,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     # chat_input.submit(process_input, [chat_input, state], chatbot)
     submit_button.click(process_input, [chat_input, state], chatbot)
+
+    planner_api_key.change(
+        fn=update_api_key,
+        inputs=[planner_api_key, state],
+        outputs=None
+    )
 
 demo.launch(share=False,
             allowed_paths=["./"],
