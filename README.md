@@ -51,7 +51,7 @@ https://github.com/user-attachments/assets/f50b7611-2350-4712-af9e-3d31e30020ee
 ## 🚀 Getting Started
 
 ### 0. Prerequisites
-- Instal Miniconda on your system through this [link](https://www.anaconda.com/download?utm_source=anacondadocs&utm_medium=documentation&utm_campaign=download&utm_content=topnavalldocs). (**Python Version: >= 3.11**).
+- Instal Miniconda on your system through this [link](https://www.anaconda.com/download?utm_source=anacondadocs&utm_medium=documentation&utm_campaign=download&utm_content=topnavalldocs). (**Python Version: >= 3.12**).
 - Hardware Requirements (optional, for ShowUI local-run):
     - **Windows (CUDA-enabled):** A compatible NVIDIA GPU with CUDA support, >=6GB GPU memory
     - **macOS (Apple Silicon):** M1 chip (or newer), >=16GB unified RAM
