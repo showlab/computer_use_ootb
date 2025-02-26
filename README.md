@@ -67,7 +67,7 @@ cd computer_use_ootb
 
 ### 2.1 Install Dependencies 🔧
 ```bash
-pip install -r dev-requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 2.2 (Optional) Get Prepared for **<span style="color:rgb(106, 158, 210)">S</span><span style="color:rgb(111, 163, 82)">h</span><span style="color:rgb(209, 100, 94)">o</span><span style="color:rgb(238, 171, 106)">w</span>UI** Local-Run
