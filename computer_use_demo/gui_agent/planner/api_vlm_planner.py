@@ -16,7 +16,6 @@ from computer_use_demo.gui_agent.llm_utils.qwen import run_qwen
 from computer_use_demo.gui_agent.llm_utils.llm_utils import extract_data, encode_image
 from computer_use_demo.tools.colorful_text import colorful_text_showui, colorful_text_vlm
 
-import torch
 from transformers import Qwen2VLForConditionalGeneration, AutoTokenizer, AutoProcessor
 from qwen_vl_utils import process_vision_info
 
@@ -34,9 +33,7 @@ class APIVLMPlanner:
         only_n_most_recent_images: int | None = None,
         selected_screen: int = 0,
         print_usage: bool = True,
-        device: torch.device = torch.device("cpu"),
     ):
-        self.device = device
         if model == "gpt-4o":
             self.model = "gpt-4o-2024-11-20"
         elif model == "gpt-4o-mini":

@@ -24,6 +24,14 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 </SYSTEM_CAPABILITY>
 """
 
+MODEL_TO_HF_PATH = {
+    "qwen-vl-7b-instruct": "Qwen/Qwen2-VL-7B-Instruct",
+    "qwen2-vl-2b-instruct": "Qwen/Qwen2-VL-2B-Instruct",
+    "qwen2.5-vl-3b-instruct": "Qwen/Qwen2.5-VL-3B-Instruct",
+    "qwen2.5-vl-7b-instruct": "Qwen/Qwen2.5-VL-7B-Instruct",
+}
+
+
 class LocalVLMPlanner:
     def __init__(
         self,
@@ -41,36 +49,22 @@ class LocalVLMPlanner:
         self.device = device
         self.min_pixels = 256 * 28 * 28
         self.max_pixels = 1344 * 28 * 28
-        
-        if model == "qwen-vl-7b-instruct":  # local model
-            self.model_name = "qwen-vl-7b-instruct"
-            self.model = Qwen2VLForConditionalGeneration.from_pretrained(
-                # "Qwen/Qwen2-VL-7B-Instruct",
-                "./Qwen2-VL-7B-Instruct",
-                torch_dtype=torch.bfloat16,
-                device_map="cpu"
-            ).to(self.device)
-            self.processor = AutoProcessor.from_pretrained(
-                "./Qwen2-VL-7B-Instruct",
-                min_pixels=self.min_pixels,
-                max_pixels=self.max_pixels
-            )
-        
-        elif model == "qwen2-vl-2b-instruct":
-            self.model_name = "qwen2-vl-2b-instruct"
-            self.model = Qwen2VLForConditionalGeneration.from_pretrained(
-                # "Qwen/Qwen2-VL-2B-Instruct",
-                "./Qwen2-VL-2B-Instruct",
-                torch_dtype=torch.bfloat16,
-                device_map="cpu"
-            ).to(self.device)
-            self.processor = AutoProcessor.from_pretrained(
-                "./Qwen2-VL-2B-Instruct",
-                min_pixels=self.min_pixels,
-                max_pixels=self.max_pixels
-            )
+        self.model_name = model
+        if model in MODEL_TO_HF_PATH:
+            self.hf_path = MODEL_TO_HF_PATH[model]
         else:
-            raise ValueError(f"Model {model} not supported")
+            raise ValueError(f"Model {model} not supported for local VLM planner")
+        
+        self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+            self.hf_path,
+            torch_dtype=torch.bfloat16,
+            device_map="cpu"
+        ).to(self.device)
+        self.processor = AutoProcessor.from_pretrained(
+            self.hf_path,
+            min_pixels=self.min_pixels,
+            max_pixels=self.max_pixels
+        )
         
         self.provider = provider
         self.system_prompt_suffix = system_prompt_suffix
@@ -207,8 +201,6 @@ IMPORTANT NOTES:
 4. You should not include other actions, such as keyboard shortcuts.
 5. When the task is completed, you should say "Next Action": "None" in the json field.
 """ 
-
-
 
 def _message_filter_callback(messages):
     filtered_list = []

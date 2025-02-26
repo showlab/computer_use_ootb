@@ -11,7 +11,6 @@ from anthropic.types.beta import BetaContentBlock, BetaMessage, BetaMessageParam
 from computer_use_demo.tools import ToolResult
 
 
-import torch
 
 from computer_use_demo.gui_agent.planner.anthropic_agent import AnthropicActor
 from computer_use_demo.executor.anthropic_executor import AnthropicExecutor
@@ -46,6 +45,18 @@ PROVIDER_TO_DEFAULT_MODEL_NAME: dict[APIProvider, str] = {
     APIProvider.SSH: "qwen2-vl-2b",
 }
 
+PLANNER_MODEL_CHOICES_MAPPING = {
+    "claude-3-5-sonnet-20241022": "claude-3-5-sonnet-20241022",
+    "gpt-4o": "gpt-4o",
+    "qwen2-vl-max": "qwen2-vl-max",
+    "qwen2-vl-2b (local)": "qwen2-vl-2b-instruct",
+    "qwen2-vl-7b (local)": "qwen2-vl-7b-instruct",
+    "qwen2.5-vl-3b (local)": "qwen2.5-vl-3b-instruct",
+    "qwen2.5-vl-7b (local)": "qwen2.5-vl-7b-instruct",
+    "qwen2-vl-2b (ssh)": "qwen2-vl-2b (ssh)",
+    "qwen2-vl-7b (ssh)": "qwen2-vl-7b (ssh)",
+}
+
 
 def sampling_loop_sync(
     *,
@@ -73,6 +84,12 @@ def sampling_loop_sync(
     # ---------------------------
     # Initialize Planner
     # ---------------------------
+    
+    if planner_model in PLANNER_MODEL_CHOICES_MAPPING:
+        planner_model = PLANNER_MODEL_CHOICES_MAPPING[planner_model]
+    else:
+        raise ValueError(f"Planner Model {planner_model} not supported")
+    
     if planner_model == "claude-3-5-sonnet-20241022":
         # Register Actor and Executor
         actor = AnthropicActor(
@@ -96,11 +113,6 @@ def sampling_loop_sync(
 
     elif planner_model in ["gpt-4o", "gpt-4o-mini", "qwen2-vl-max"]:
 
-        if torch.cuda.is_available(): device = torch.device("cuda")
-        elif torch.backends.mps.is_available(): device = torch.device("mps")
-        else: device = torch.device("cpu") # support: 'cpu', 'mps', 'cuda'
-        logger.info(f"Model inited on device: {device}.")
-
         planner = APIVLMPlanner(
             model=planner_model,
             provider=planner_provider,
@@ -109,11 +121,17 @@ def sampling_loop_sync(
             api_response_callback=api_response_callback,
             selected_screen=selected_screen,
             output_callback=output_callback,
-            device=device
         )
         loop_mode = "planner + actor"
 
-    elif planner_model == "qwen2-vl-7b-instruct":
+    elif planner_model in ["qwen2-vl-2b-instruct", "qwen2-vl-7b-instruct"]:
+        
+        import torch
+        if torch.cuda.is_available(): device = torch.device("cuda")
+        elif torch.backends.mps.is_available(): device = torch.device("mps")
+        else: device = torch.device("cpu") # support: 'cpu', 'mps', 'cuda'
+        logger.info(f"Model inited on device: {device}.")
+        
         planner = LocalVLMPlanner(
             model=planner_model,
             provider=planner_provider,
@@ -125,11 +143,8 @@ def sampling_loop_sync(
             device=device
         )
         loop_mode = "planner + actor"
+        
     elif "ssh" in planner_model:
-        if torch.cuda.is_available(): device = torch.device("cuda")
-        elif torch.backends.mps.is_available(): device = torch.device("mps")
-        else: device = torch.device("cpu") # support: 'cpu', 'mps', 'cuda'
-        logger.info(f"Model inited on device: {device}.")
         planner = APIVLMPlanner(
             model=planner_model,
             provider=planner_provider,
@@ -138,7 +153,6 @@ def sampling_loop_sync(
             api_response_callback=api_response_callback,
             selected_screen=selected_screen,
             output_callback=output_callback,
-            device=device
         )
         loop_mode = "planner + actor"
     else:
@@ -165,11 +179,6 @@ def sampling_loop_sync(
             awq_4bit=showui_awq_4bit
         )
 
-        executor = ShowUIExecutor(
-            output_callback=output_callback,
-            tool_output_callback=tool_output_callback,
-            selected_screen=selected_screen
-        )
     elif actor_model == "UI-TARS":
         actor = UITARS_Actor(
             ui_tars_url=ui_tars_url,
@@ -180,6 +189,11 @@ def sampling_loop_sync(
     else:
         raise ValueError(f"Actor Model {actor_model} not supported")
 
+    executor = ShowUIExecutor(
+        output_callback=output_callback,
+        tool_output_callback=tool_output_callback,
+        selected_screen=selected_screen
+    )
 
     tool_result_content = None
     showui_loop_count = 0
@@ -188,7 +202,8 @@ def sampling_loop_sync(
 
     if loop_mode == "unified":
         # ------------------------------
-        # Unified loop: repeatedly call actor -> executor -> check tool_result -> maybe end
+        # Unified loop: 
+        # 1) repeatedly call actor -> executor -> check tool_result -> maybe end
         # ------------------------------
         while True:
             # Call the actor with current messages

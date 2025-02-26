@@ -266,7 +266,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                              "gpt-4o-mini", 
                              "qwen2-vl-max", 
                              "qwen2-vl-2b (local)", 
-                             "qwen2-vl-7b (local)",
+                             "qwen2-vl-7b (local)", 
                              "qwen2-vl-2b (ssh)", 
                              "qwen2-vl-7b (ssh)",
                              "qwen2.5-vl-7b (ssh)", 
@@ -503,7 +503,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     def update_api_key_placeholder(provider_value, model_selection):
         if model_selection == "claude-3-5-sonnet-20241022":
-
             if provider_value == "anthropic":
                 return gr.update(placeholder="anthropic API key")
             elif provider_value == "bedrock":
