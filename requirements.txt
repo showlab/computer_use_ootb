@@ -21,3 +21,4 @@ qwen-vl-utils
 accelerate
 dashscope
 huggingface_hub
+openai
