@@ -10,19 +10,9 @@ from anthropic import APIResponse
 from anthropic.types.beta import BetaContentBlock, BetaMessage, BetaMessageParam
 from computer_use_demo.tools import ToolResult
 
-
-
-from computer_use_demo.gui_agent.planner.anthropic_agent import AnthropicActor
-from computer_use_demo.executor.anthropic_executor import AnthropicExecutor
-from computer_use_demo.gui_agent.planner.api_vlm_planner import APIVLMPlanner
-from computer_use_demo.gui_agent.planner.local_vlm_planner import LocalVLMPlanner
-from computer_use_demo.gui_agent.actor.showui_agent import ShowUIActor
-from computer_use_demo.executor.showui_executor import ShowUIExecutor
-from computer_use_demo.gui_agent.actor.uitars_agent import UITARS_Actor
 from computer_use_demo.tools.colorful_text import colorful_text_showui, colorful_text_vlm
 from computer_use_demo.tools.screen_capture import get_screenshot
 from computer_use_demo.gui_agent.llm_utils.oai import encode_image
-
 from computer_use_demo.tools.logger import logger
 
 
@@ -92,6 +82,10 @@ def sampling_loop_sync(
         raise ValueError(f"Planner Model {planner_model} not supported")
     
     if planner_model == "claude-3-5-sonnet-20241022":
+        
+        from computer_use_demo.gui_agent.planner.anthropic_agent import AnthropicActor
+        from computer_use_demo.executor.anthropic_executor import AnthropicExecutor
+        
         # Register Actor and Executor
         actor = AnthropicActor(
             model=planner_model, 
@@ -113,6 +107,8 @@ def sampling_loop_sync(
         loop_mode = "unified"
 
     elif planner_model in ["gpt-4o", "gpt-4o-mini", "qwen2-vl-max"]:
+        
+        from computer_use_demo.gui_agent.planner.api_vlm_planner import APIVLMPlanner
 
         planner = APIVLMPlanner(
             model=planner_model,
@@ -128,10 +124,11 @@ def sampling_loop_sync(
     elif planner_model in ["qwen2-vl-2b-instruct", "qwen2-vl-7b-instruct"]:
         
         import torch
+        from computer_use_demo.gui_agent.planner.local_vlm_planner import LocalVLMPlanner
         if torch.cuda.is_available(): device = torch.device("cuda")
         elif torch.backends.mps.is_available(): device = torch.device("mps")
         else: device = torch.device("cpu") # support: 'cpu', 'mps', 'cuda'
-        logger.info(f"Model inited on device: {device}.")
+        logger.info(f"Planner model {planner_model} inited on device: {device}.")
         
         planner = LocalVLMPlanner(
             model=planner_model,
@@ -162,13 +159,22 @@ def sampling_loop_sync(
         
 
     # ---------------------------
-    # Initialize Actor
+    # Initialize Actor, Executor
     # ---------------------------
     if actor_model == "ShowUI":
+        
+        from computer_use_demo.executor.showui_executor import ShowUIExecutor
+        from computer_use_demo.gui_agent.actor.showui_agent import ShowUIActor
         if showui_awq_4bit:
             showui_model_path = "./showui-2b-awq-4bit/"
         else:
             showui_model_path = "./showui-2b/"
+            
+        import torch
+        if torch.cuda.is_available(): device = torch.device("cuda")
+        elif torch.backends.mps.is_available(): device = torch.device("mps")
+        else: device = torch.device("cpu") # support: 'cpu', 'mps', 'cuda'
+        logger.info(f"Actor model {actor_model} inited on device: {device}.")
 
         actor = ShowUIActor(
             model_path=showui_model_path,  
@@ -179,22 +185,36 @@ def sampling_loop_sync(
             max_pixels=showui_max_pixels,
             awq_4bit=showui_awq_4bit
         )
+        
+        executor = ShowUIExecutor(
+            output_callback=output_callback,
+            tool_output_callback=tool_output_callback,
+            selected_screen=selected_screen
+        )
 
     elif actor_model == "UI-TARS":
+        
+        from computer_use_demo.executor.showui_executor import ShowUIExecutor
+        from computer_use_demo.gui_agent.actor.uitars_agent import UITARS_Actor
+        
         actor = UITARS_Actor(
             ui_tars_url=ui_tars_url,
             output_callback=output_callback,
             selected_screen=selected_screen
         )
+        
+        executor = ShowUIExecutor(
+            output_callback=output_callback,
+            tool_output_callback=tool_output_callback,
+            selected_screen=selected_screen
+        )
+        
+    elif actor_model == "claude-3-5-sonnet-20241022":
+        loop_mode = "unified"
 
     else:
         raise ValueError(f"Actor Model {actor_model} not supported")
 
-    executor = ShowUIExecutor(
-        output_callback=output_callback,
-        tool_output_callback=tool_output_callback,
-        selected_screen=selected_screen
-    )
 
     tool_result_content = None
     showui_loop_count = 0

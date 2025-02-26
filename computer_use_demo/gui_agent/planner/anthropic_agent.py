@@ -93,12 +93,15 @@ class AnthropicActor:
         self.print_usage = print_usage
 
         # Instantiate the appropriate API client based on the provider
+        print("provider:", provider)
         if provider == APIProvider.ANTHROPIC:
             self.client = Anthropic(api_key=api_key)
         elif provider == APIProvider.VERTEX:
             self.client = AnthropicVertex()
         elif provider == APIProvider.BEDROCK:
             self.client = AnthropicBedrock()
+        else:
+            raise ValueError(f"Provider {provider} not supported")
 
     def __call__(
         self, 

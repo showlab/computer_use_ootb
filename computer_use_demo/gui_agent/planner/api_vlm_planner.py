@@ -16,9 +16,6 @@ from computer_use_demo.gui_agent.llm_utils.qwen import run_qwen
 from computer_use_demo.gui_agent.llm_utils.llm_utils import extract_data, encode_image
 from computer_use_demo.tools.colorful_text import colorful_text_showui, colorful_text_vlm
 
-from transformers import Qwen2VLForConditionalGeneration, AutoTokenizer, AutoProcessor
-from qwen_vl_utils import process_vision_info
-
 
 class APIVLMPlanner:
     def __init__(
@@ -46,15 +43,6 @@ class APIVLMPlanner:
             self.model = "Qwen2-VL-7B-Instruct"
         elif model == "qwen2.5-vl-7b (ssh)":
             self.model = "Qwen2.5-VL-7B-Instruct"
-        elif model == "qwen-vl-7b-instruct":  # local model
-            self.model = "qwen-vl-7b-instruct"
-            self.min_pixels = 256 * 28 * 28
-            self.max_pixels = 1344 * 28 * 28
-            self.processor = AutoProcessor.from_pretrained(
-                "./Qwen2-VL-7B-Instruct",
-                min_pixels=self.min_pixels,
-                max_pixels=self.max_pixels
-            )
         else:
             raise ValueError(f"Model {model} not supported")
         

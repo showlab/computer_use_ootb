@@ -49,7 +49,6 @@ def setup_state(state):
         state["planner_model"] = "gpt-4o"  # default
     if "actor_model" not in state:
         state["actor_model"] = "ShowUI"    # default
-
     if "planner_provider" not in state:
         state["planner_provider"] = "openai"  # default
     if "actor_provider" not in state:
@@ -404,7 +403,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             actor_model_interactive = True
             api_key_type = "password"  # Display API key in password form
         
-        elif model_selection == "qwen2-vl-2b (local)" or model_selection == "qwen2-vl-7b (local)":
+        elif model_selection in ["qwen2-vl-2b (local)", "qwen2-vl-7b (local)"]:
             # Set provider to "openai", make it unchangeable
             provider_choices = ["local"]
             provider_value = "local"
@@ -449,6 +448,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             # Provider can be any of the current choices except 'openai'
             provider_choices = [option.value for option in APIProvider if option.value != "openai"]
             provider_value = "anthropic"  # Set default to 'anthropic'
+            state['actor_provider'] = "anthropic"
             provider_interactive = True
             api_key_interactive = True
             api_key_placeholder = "claude API key"
@@ -599,7 +599,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         with gr.Column(scale=1, min_width=50):
             submit_button = gr.Button(value="Send", variant="primary")
 
-    chatbot = gr.Chatbot(label="Chatbot History", type="tuples", autoscroll=True, height=580)
+    chatbot = gr.Chatbot(label="Chatbot History", type="tuples", autoscroll=True, height=580, group_consecutive_messages=False)
     
     planner_model.change(fn=update_planner_model, inputs=[planner_model, state], outputs=[planner_api_provider, planner_api_key, actor_model])
     planner_api_provider.change(fn=update_api_key_placeholder, inputs=[planner_api_provider, planner_model], outputs=planner_api_key)

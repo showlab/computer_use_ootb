@@ -1,4 +1,4 @@
-ruff==0.6.7
+ruff
 pre-commit==3.8.0
 pytest==8.3.3
 pytest-asyncio==0.23.6
@@ -8,13 +8,13 @@ anthropic[bedrock,vertex]>=0.37.1
 jsonschema==4.22.0
 boto3>=1.28.57
 google-auth<3,>=2
-gradio>=5.6.0
+gradio>=5.18.0
 screeninfo
 uiautomation
 
 # make sure to install the correct version of torch (cuda, mps, cpu, etc.)
-torch
-torchvision
+# torch
+# torchvision
 
 transformers
 qwen-vl-utils
