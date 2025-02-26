@@ -48,6 +48,7 @@ PROVIDER_TO_DEFAULT_MODEL_NAME: dict[APIProvider, str] = {
 PLANNER_MODEL_CHOICES_MAPPING = {
     "claude-3-5-sonnet-20241022": "claude-3-5-sonnet-20241022",
     "gpt-4o": "gpt-4o",
+    "gpt-4o-mini": "gpt-4o-mini", 
     "qwen2-vl-max": "qwen2-vl-max",
     "qwen2-vl-2b (local)": "qwen2-vl-2b-instruct",
     "qwen2-vl-7b (local)": "qwen2-vl-7b-instruct",
