@@ -20,6 +20,7 @@ def run_oai_interleaved(messages: list, system: str, llm: str, api_key: str, max
     # image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
     if type(messages) == list:
         for item in messages:
+            print(f"item: {item}")
             contents = []
             if isinstance(item, dict):
                 for cnt in item["content"]:
@@ -27,12 +28,23 @@ def run_oai_interleaved(messages: list, system: str, llm: str, api_key: str, max
                         if is_image_path(cnt):
                             base64_image = encode_image(cnt)
                             content = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                        # content = {"type": "image_url", "image_url": {"url": image_url}}
                         else:
                             content = {"type": "text", "text": cnt}
-                    contents.append(content)
                     
+                    # if isinstance(cnt, list):
+                        
+                    contents.append(content)
                 message = {"role": item["role"], "content": contents}
+                
+            elif isinstance(item, str):
+                if is_image_path(item):
+                    base64_image = encode_image(item)
+                    contents.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}})
+                    message = {"role": "user", "content": contents}
+                else:
+                    contents.append({"type": "text", "text": item})
+                    message = {"role": "user", "content": contents}
+                    
             else:  # str
                 contents.append({"type": "text", "text": item})
                 message = {"role": "user", "content": contents}
@@ -41,9 +53,9 @@ def run_oai_interleaved(messages: list, system: str, llm: str, api_key: str, max
 
     
     elif isinstance(messages, str):
-        final_messages = [{"role": "user", "content": messages}]
+        final_messages.append({"role": "user", "content": messages})
 
-    print("[oai] sending messages:", final_messages)
+    print("[oai] sending messages:", [f"{k}: {v}, {k}" for k, v in final_messages])
 
     payload = {
         "model": llm,

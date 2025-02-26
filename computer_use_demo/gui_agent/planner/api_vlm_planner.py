@@ -78,11 +78,18 @@ class APIVLMPlanner:
         self.output_callback(f'Screenshot for {colorful_text_vlm}:\n<img src="data:image/png;base64,{image_base64}">',
                              sender="bot")
         
-        if isinstance(planner_messages[-1], dict):
-            if not isinstance(planner_messages[-1]["content"], list):
-                planner_messages[-1]["content"] = [planner_messages[-1]["content"]]
-            planner_messages[-1]["content"].append(screenshot_path)
-
+        # if isinstance(planner_messages[-1], dict):
+        #     if not isinstance(planner_messages[-1]["content"], list):
+        #         planner_messages[-1]["content"] = [planner_messages[-1]["content"]]
+        #     planner_messages[-1]["content"].append(screenshot_path)
+        # elif isinstance(planner_messages[-1], str):
+        #     planner_messages[-1] = {"role": "user", "content": [{"type": "text", "text": planner_messages[-1]}]}
+        
+        # append screenshot
+        # planner_messages.append({"role": "user", "content": [{"type": "image", "image": screenshot_path}]})
+        
+        planner_messages.append(screenshot_path)
+        
         print(f"Sending messages to VLMPlanner: {planner_messages}")
 
         if self.model == "gpt-4o-2024-11-20":

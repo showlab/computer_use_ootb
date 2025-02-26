@@ -57,7 +57,7 @@ class LocalVLMPlanner:
         
         self.model = Qwen2VLForConditionalGeneration.from_pretrained(
             self.hf_path,
-            torch_dtype=torch.bfloat16,
+            torch_dtype=torch.float16,
             device_map="cpu"
         ).to(self.device)
         self.processor = AutoProcessor.from_pretrained(
