@@ -71,7 +71,7 @@ class ShowUIActor:
         
         self.model = Qwen2VLForConditionalGeneration.from_pretrained(
             model_path,
-            torch_dtype=torch.bfloat16,
+            torch_dtype=torch.float16,
             device_map="cpu"
         ).to(self.device)
         self.model.eval()
@@ -110,7 +110,6 @@ class ShowUIActor:
                     {"type": "text", "text": self.system_prompt},
                     {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels": self.max_pixels},
                     {"type": "text", "text": f"Task: {task}"}
-                    # {"type": "text", "text": f"\nAction History: {self.action_history}}
                 ],
             }
         ]
@@ -137,6 +136,9 @@ class ShowUIActor:
         output_text = self.processor.batch_decode(
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0]
+        
+        # dummy output test
+        # output_text = "{'action': 'CLICK', 'value': None, 'position': [0.49, 0.42]}"
 
         # Update action history
         self.action_history += output_text + '\n'

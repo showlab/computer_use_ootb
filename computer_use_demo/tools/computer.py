@@ -137,10 +137,11 @@ class ComputerTool(BaseAnthropicTool):
 
         # Path to cliclick
         self.cliclick = "cliclick"
-        self.key_conversion = {"Page_Down": "pagedown",
-                               "Page_Up": "pageup",
-                               "Super_L": "win",
-                               "Escape": "esc"}
+        self.key_conversion = {"page_down": "pagedown",
+                               "page_up": "pageup",
+                               "super_l": "win",
+                               "super": "command",
+                               "escape": "esc"}
         
         self.action_conversion = {"left click": "click",
                                   "right click": "right_click"}
@@ -244,12 +245,12 @@ class ComputerTool(BaseAnthropicTool):
                 # Handle key combinations
                 keys = text.split('+')
                 for key in keys:
-                    key = self.key_conversion.get(key.strip(), key.strip())
-                    key = key.lower()
+                    key = key.strip().lower()
+                    key = self.key_conversion.get(key, key)
                     pyautogui.keyDown(key)  # Press down each key
                 for key in reversed(keys):
-                    key = self.key_conversion.get(key.strip(), key.strip())
-                    key = key.lower()
+                    key = key.strip().lower()
+                    key = self.key_conversion.get(key, key)
                     pyautogui.keyUp(key)    # Release each key in reverse order
                 return ToolResult(output=f"Pressed keys: {text}")
             

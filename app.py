@@ -22,74 +22,64 @@ from anthropic.types.beta import BetaMessage, BetaTextBlock, BetaToolUseBlock
 from anthropic.types.tool_use_block import ToolUseBlock
 
 from screeninfo import get_monitors
+from computer_use_demo.tools.logger import logger, truncate_string
 
-# TODO: I don't know why If don't get monitors here, the screen resolution will be wrong for secondary screen. Seems there are some conflict with computer_use_demo.tools
+logger.info("Starting the gradio app")
+
 screens = get_monitors()
-print(screens)
-from computer_use_demo.loop import (
-    PROVIDER_TO_DEFAULT_MODEL_NAME,
-    APIProvider,
-    sampling_loop_sync,
-)
+logger.info(f"Found {len(screens)} screens")
+
+from computer_use_demo.loop import APIProvider, sampling_loop_sync
 
 from computer_use_demo.tools import ToolResult
 from computer_use_demo.tools.computer import get_screen_details
 SCREEN_NAMES, SELECTED_SCREEN_INDEX = get_screen_details()
-# SELECTED_SCREEN_INDEX = None
-# SCREEN_NAMES = None
 
-CONFIG_DIR = Path("~/.anthropic").expanduser()
-API_KEY_FILE = CONFIG_DIR / "api_key"
+API_KEY_FILE = "./api_keys.json"
 
-WARNING_TEXT = "⚠️ Security Alert: Never provide access to sensitive accounts or data, as malicious web content can hijack Claude's behavior"
-
-
-class Sender(StrEnum):
-    USER = "user"
-    BOT = "assistant"
-    TOOL = "tool"
+WARNING_TEXT = "⚠️ Security Alert: Do not provide access to sensitive accounts or data, as malicious web content can hijack Agent's behavior. Keep monitor on the Agent's actions."
 
 
 def setup_state(state):
 
     if "messages" not in state:
         state["messages"] = []
-    if "model" not in state:
-        state["model"] = "gpt-4o + ShowUI"
-        # _reset_model(state)
-    if "provider" not in state:
-        if state["model"] == "qwen2-vl-max + ShowUI":
-            state["provider"] = "DashScopeAPI"
-        elif state["model"] == "gpt-4o + ShowUI":
-            state["provider"] = "openai"
-        # elif state["model"] == "qwen-vl-7b-instruct + ShowUI":
-        #     state["provider"] = "local-run (not applicable)"
-        else:
-            state["provider"] = os.getenv("API_PROVIDER", "anthropic") or "anthropic"
+    # -------------------------------
+    if "planner_model" not in state:
+        state["planner_model"] = "gpt-4o"  # default
+    if "actor_model" not in state:
+        state["actor_model"] = "ShowUI"    # default
+    if "planner_provider" not in state:
+        state["planner_provider"] = "openai"  # default
+    if "actor_provider" not in state:
+        state["actor_provider"] = "local"    # default
 
-    if "provider_radio" not in state:
-        state["provider_radio"] = state["provider"]
-    
-    if "openai_api_key" not in state:  # Fetch API keys from environment variables
+     # Fetch API keys from environment variables
+    if "openai_api_key" not in state: 
         state["openai_api_key"] = os.getenv("OPENAI_API_KEY", "")
     if "anthropic_api_key" not in state:
         state["anthropic_api_key"] = os.getenv("ANTHROPIC_API_KEY", "")    
     if "qwen_api_key" not in state:
         state["qwen_api_key"] = os.getenv("QWEN_API_KEY", "")
-    
+    if "ui_tars_url" not in state:
+        state["ui_tars_url"] = ""
+
     # Set the initial api_key based on the provider
-    if "api_key" not in state:
-        if state["provider"] == "openai":
-            state["api_key"] = state["openai_api_key"]
-        elif state["provider"] == "anthropic":
-            state["api_key"] = state["anthropic_api_key"]
-        elif state["provider"] == "qwen":
-            state["api_key"] = state["qwen_api_key"]
+    if "planner_api_key" not in state:
+        if state["planner_provider"] == "openai":
+            state["planner_api_key"] = state["openai_api_key"]
+        elif state["planner_provider"] == "anthropic":
+            state["planner_api_key"] = state["anthropic_api_key"]
+        elif state["planner_provider"] == "qwen":
+            state["planner_api_key"] = state["qwen_api_key"]
         else:
-            state["api_key"] = ""
-    # print(f"state['api_key']: {state['api_key']}")
-    if not state["api_key"]:
-        print("API key not found. Please set it in the environment or paste in textbox.")
+            state["planner_api_key"] = ""
+
+    logger.info(f"loaded initial api_key for {state['planner_provider']}: {state['planner_api_key']}")
+
+    if not state["planner_api_key"]:
+        logger.warning("Planner API key not found. Please set it in the environment or paste in textbox.")
+
 
     if "selected_screen" not in state:
         state['selected_screen'] = SELECTED_SCREEN_INDEX if SCREEN_NAMES else 0
@@ -103,7 +93,7 @@ def setup_state(state):
     if "only_n_most_recent_images" not in state:
         state["only_n_most_recent_images"] = 10 # 10
     if "custom_system_prompt" not in state:
-        state["custom_system_prompt"] = load_from_storage("system_prompt") or ""
+        state["custom_system_prompt"] = ""
         # remove if want to use default system prompt
         device_os_name = "Windows" if platform.system() == "Windows" else "Mac" if platform.system() == "Darwin" else "Linux"
         state["custom_system_prompt"] += f"\n\nNOTE: you are operating a {device_os_name} machine"
@@ -118,11 +108,6 @@ def setup_state(state):
         state["max_pixels"] = 1344
     if "awq_4bit" not in state:
         state["awq_4bit"] = False
-    
-
-
-def _reset_model(state):
-    state["model"] = PROVIDER_TO_DEFAULT_MODEL_NAME[cast(APIProvider, state["provider"])]
 
 
 async def main(state):
@@ -152,31 +137,6 @@ def validate_auth(provider: APIProvider, api_key: str | None):
             return "Your google cloud credentials are not set up correctly."
 
 
-def load_from_storage(filename: str) -> str | None:
-    """Load data from a file in the storage directory."""
-    try:
-        file_path = CONFIG_DIR / filename
-        if file_path.exists():
-            data = file_path.read_text().strip()
-            if data:
-                return data
-    except Exception as e:
-        print(f"Debug: Error loading {filename}: {e}")
-    return None
-
-
-def save_to_storage(filename: str, data: str) -> None:
-    """Save data to a file in the storage directory."""
-    try:
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        file_path = CONFIG_DIR / filename
-        file_path.write_text(data)
-        # Ensure only user can read/write the file
-        file_path.chmod(0o600)
-    except Exception as e:
-        print(f"Debug: Error saving {filename}: {e}")
-
-
 def _api_response_callback(response: APIResponse[BetaMessage], response_state: dict):
     response_id = datetime.now().isoformat()
     response_state[response_id] = response
@@ -190,8 +150,8 @@ def chatbot_output_callback(message, chatbot_state, hide_images=False, sender="b
     
     def _render_message(message: str | BetaTextBlock | BetaToolUseBlock | ToolResult, hide_images=False):
     
-        print(f"_render_message: {str(message)[:100]}")
-        
+        logger.info(f"_render_message: {str(message)[:100]}")
+
         if isinstance(message, str):
             return message
         
@@ -227,11 +187,7 @@ def chatbot_output_callback(message, chatbot_state, hide_images=False, sender="b
         else:  
             return message
 
-    def _truncate_string(s, max_length=500):
-        """Truncate long strings for concise printing."""
-        if isinstance(s, str) and len(s) > max_length:
-            return s[:max_length] + "..."
-        return s
+
     # processing Anthropic messages
     message = _render_message(message, hide_images)
     
@@ -239,26 +195,18 @@ def chatbot_output_callback(message, chatbot_state, hide_images=False, sender="b
         chatbot_state.append((None, message))
     else:
         chatbot_state.append((message, None))
-    
-    # Create a concise version of the chatbot state for printing
-    concise_state = [(_truncate_string(user_msg), _truncate_string(bot_msg))
-                        for user_msg, bot_msg in chatbot_state]
-    # print(f"chatbot_output_callback chatbot_state: {concise_state} (truncated)")
+
+    # Create a concise version of the chatbot state for logging
+    concise_state = [(truncate_string(user_msg), truncate_string(bot_msg)) for user_msg, bot_msg in chatbot_state]
+    logger.info(f"chatbot_output_callback chatbot_state: {concise_state} (truncated)")
+
 
 def process_input(user_input, state):
     
     setup_state(state)
 
     # Append the user message to state["messages"]
-    if state["model"] == "claude-3-5-sonnet-20241022":
-        state["messages"].append(
-            {
-                "role": Sender.USER,
-                "content": [TextBlock(type="text", text=user_input)],
-            }
-        )
-    else:
-        state["messages"].append(
+    state["messages"].append(
             {
                 "role": "user",
                 "content": [TextBlock(type="text", text=user_input)],
@@ -272,13 +220,15 @@ def process_input(user_input, state):
     # Run sampling_loop_sync with the chatbot_output_callback
     for loop_msg in sampling_loop_sync(
         system_prompt_suffix=state["custom_system_prompt"],
-        model=state["model"],
-        provider=state["provider"],
+        planner_model=state["planner_model"],
+        planner_provider=state["planner_provider"],
+        actor_model=state["actor_model"],
+        actor_provider=state["actor_provider"],
         messages=state["messages"],
         output_callback=partial(chatbot_output_callback, chatbot_state=state['chatbot_messages'], hide_images=state["hide_images"]),
         tool_output_callback=partial(_tool_output_callback, tool_state=state["tools"]),
         api_response_callback=partial(_api_response_callback, response_state=state["responses"]),
-        api_key=state["api_key"],
+        api_key=state["planner_api_key"],
         only_n_most_recent_images=state["only_n_most_recent_images"],
         selected_screen=state['selected_screen'],
         showui_max_pixels=state['max_pixels'],
@@ -286,9 +236,10 @@ def process_input(user_input, state):
     ):  
         if loop_msg is None:
             yield state['chatbot_messages']
-            print("End of task. Close the loop.")
+            logger.info("End of task. Close the loop.")
             break
             
+
         yield state['chatbot_messages']  # Yield the updated chatbot_messages to update the chatbot UI
 
 
@@ -306,31 +257,46 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     with gr.Accordion("Settings", open=True): 
         with gr.Row():
             with gr.Column():
-                model = gr.Dropdown(
-                    label="Model",
-                    choices=["gpt-4o + ShowUI",
-                             "qwen2-vl-max + ShowUI",
-                            #  "qwen-vl-7b-instruct + ShowUI",
-                             "claude-3-5-sonnet-20241022",
-                             ],
-                    value="gpt-4o + ShowUI",  # Set to one of the choices
+                # --------------------------
+                # Planner
+                planner_model = gr.Dropdown(
+                    label="Planner Model",
+                    choices=["gpt-4o", 
+                             "gpt-4o-mini", 
+                             "qwen2-vl-max", 
+                             "qwen2-vl-2b (local)", 
+                             "qwen2-vl-7b (local)", 
+                             "qwen2-vl-2b (ssh)", 
+                             "qwen2-vl-7b (ssh)",
+                             "qwen2.5-vl-7b (ssh)", 
+                             "claude-3-5-sonnet-20241022"],
+                    value="gpt-4o",
                     interactive=True,
                 )
             with gr.Column():
-                provider = gr.Dropdown(
+                planner_api_provider = gr.Dropdown(
                     label="API Provider",
                     choices=[option.value for option in APIProvider],
                     value="openai",
                     interactive=False,
                 )
             with gr.Column():
-                api_key = gr.Textbox(
-                    label="API Key",
+                planner_api_key = gr.Textbox(
+                    label="Planner API Key",
                     type="password",
-                    value=state.value.get("api_key", ""),
-                    placeholder="Paste your API key here",
+                    value=state.value.get("planner_api_key", ""),
+                    placeholder="Paste your planner model API key",
                     interactive=True,
                 )
+
+            with gr.Column():
+                actor_model = gr.Dropdown(
+                    label="Actor Model",
+                    choices=["ShowUI", "UI-TARS"],
+                    value="ShowUI",
+                    interactive=True,
+                )
+
             with gr.Column():
                 custom_prompt = gr.Textbox(
                     label="System Prompt Suffix",
@@ -375,7 +341,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 )
             with gr.Column():
                 max_pixels = gr.Slider(
-                    label="Max Pixels",
+                    label="Max Visual Tokens",
                     minimum=720,
                     maximum=1344,
                     step=16,
@@ -389,8 +355,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                     interactive=False
                 )
             
-        # hide_images = gr.Checkbox(label="Hide screenshots", value=False)
-
     # Define the merged dictionary with task mappings
     merged_dict = json.load(open("assets/examples/ootb_examples.json", "r"))
 
@@ -418,39 +382,86 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         global SCREEN_NAMES
         global SELECTED_SCREEN_INDEX
         SELECTED_SCREEN_INDEX = SCREEN_NAMES.index(selected_screen_name)
-        print(f"Selected screen updated to: {SELECTED_SCREEN_INDEX}")
+        logger.info(f"Selected screen updated to: {SELECTED_SCREEN_INDEX}")
         state['selected_screen'] = SELECTED_SCREEN_INDEX
 
-    def update_model(model_selection, state):
+
+    def update_planner_model(model_selection, state):
         state["model"] = model_selection
-        print(f"Model updated to: {state['model']}")
+        # Update planner_model
+        state["planner_model"] = model_selection
+        logger.info(f"Model updated to: {state['planner_model']}")
         
-        if model_selection == "qwen2-vl-max + ShowUI":
+        if model_selection == "qwen2-vl-max":
             provider_choices = ["qwen"]
             provider_value = "qwen"
             provider_interactive = False
+            api_key_interactive = True
             api_key_placeholder = "qwen API key"
-        elif model_selection == "gpt-4o + ShowUI":
+            actor_model_choices = ["ShowUI", "UI-TARS"]
+            actor_model_value = "ShowUI"
+            actor_model_interactive = True
+            api_key_type = "password"  # Display API key in password form
+        
+        elif model_selection in ["qwen2-vl-2b (local)", "qwen2-vl-7b (local)"]:
+            # Set provider to "openai", make it unchangeable
+            provider_choices = ["local"]
+            provider_value = "local"
+            provider_interactive = False
+            api_key_interactive = False
+            api_key_placeholder = "not required"
+            actor_model_choices = ["ShowUI", "UI-TARS"]
+            actor_model_value = "ShowUI"
+            actor_model_interactive = True
+            api_key_type = "password"  # Maintain consistency
+
+        elif "ssh" in model_selection:
+            provider_choices = ["ssh"]
+            provider_value = "ssh"
+            provider_interactive = False
+            api_key_interactive = True
+            api_key_placeholder = "ssh host and port (e.g. localhost:8000)"
+            actor_model_choices = ["ShowUI", "UI-TARS"]
+            actor_model_value = "ShowUI"
+            actor_model_interactive = True
+            api_key_type = "text"  # Display SSH connection info in plain text
+            # If SSH connection info already exists, keep it
+            if "planner_api_key" in state and state["planner_api_key"]:
+                state["api_key"] = state["planner_api_key"]
+            else:
+                state["api_key"] = ""
+
+        elif model_selection == "gpt-4o" or model_selection == "gpt-4o-mini":
             # Set provider to "openai", make it unchangeable
             provider_choices = ["openai"]
             provider_value = "openai"
             provider_interactive = False
+            api_key_interactive = True
+            api_key_type = "password"  # Display API key in password form
+
             api_key_placeholder = "openai API key"
+            actor_model_choices = ["ShowUI", "UI-TARS"]
+            actor_model_value = "ShowUI"
+            actor_model_interactive = True
+
         elif model_selection == "claude-3-5-sonnet-20241022":
             # Provider can be any of the current choices except 'openai'
             provider_choices = [option.value for option in APIProvider if option.value != "openai"]
             provider_value = "anthropic"  # Set default to 'anthropic'
+            state['actor_provider'] = "anthropic"
             provider_interactive = True
+            api_key_interactive = True
             api_key_placeholder = "claude API key"
+            actor_model_choices = ["claude-3-5-sonnet-20241022"]
+            actor_model_value = "claude-3-5-sonnet-20241022"
+            actor_model_interactive = False
+            api_key_type = "password"  # Display API key in password form
+
         else:
-            # Default case
-            provider_choices = [option.value for option in APIProvider]
-            provider_value = state.get("provider", provider_choices[0])
-            provider_interactive = True
-            api_key_placeholder = ""
+            raise ValueError(f"Model {model_selection} not supported")
 
         # Update the provider in state
-        state["provider"] = provider_value
+        state["planner_api_provider"] = provider_value
         
         # Update api_key in state based on the provider
         if provider_value == "openai":
@@ -459,10 +470,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             state["api_key"] = state.get("anthropic_api_key", "")
         elif provider_value == "qwen":
             state["api_key"] = state.get("qwen_api_key", "")
-        else:
+        elif provider_value == "local":
             state["api_key"] = ""
+        # SSH的情况已经在上面处理过了，这里不需要重复处理
 
-        # Use gr.update() instead of gr.Dropdown.update()
         provider_update = gr.update(
             choices=provider_choices,
             value=provider_value,
@@ -472,11 +483,24 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         # Update the API Key textbox
         api_key_update = gr.update(
             placeholder=api_key_placeholder,
-            value=state["api_key"]
+            value=state["api_key"],
+            interactive=api_key_interactive,
+            type=api_key_type  # 添加 type 参数的更新
         )
 
-        return provider_update, api_key_update
+        actor_model_update = gr.update(
+            choices=actor_model_choices,
+            value=actor_model_value,
+            interactive=actor_model_interactive
+        )
+
+        logger.info(f"Updated state: model={state['planner_model']}, provider={state['planner_api_provider']}, api_key={state['api_key']}")
+        return provider_update, api_key_update, actor_model_update
     
+    def update_actor_model(actor_model_selection, state):
+        state["actor_model"] = actor_model_selection
+        logger.info(f"Actor model updated to: {state['actor_model']}")
+
     def update_api_key_placeholder(provider_value, model_selection):
         if model_selection == "claude-3-5-sonnet-20241022":
             if provider_value == "anthropic":
@@ -491,7 +515,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             return gr.update(placeholder="openai API key")
         else:
             return gr.update(placeholder="")
-        
+
     def update_system_prompt_suffix(system_prompt_suffix, state):
         state["custom_system_prompt"] = system_prompt_suffix
         
@@ -525,6 +549,13 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 gr.update(interactive=True)
             )
 
+    def update_api_key(api_key_value, state):
+        """Handle API key updates"""
+        state["planner_api_key"] = api_key_value
+        if state["planner_provider"] == "ssh":
+            state["api_key"] = api_key_value
+        logger.info(f"API key updated: provider={state['planner_provider']}, api_key={state['api_key']}")
+
     with gr.Accordion("Quick Start Prompt", open=False):  # open=False 表示默认收
         # Initialize Gradio interface with the dropdowns
         with gr.Row():
@@ -556,11 +587,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 image_preview = gr.Image(value=initial_image_value, label="Reference Initial State", height=260-(318.75-280))
                 hintbox = gr.Markdown("Task Hint: Selected options will appear here.")
 
-
         # Textbox for displaying the mapped value
         # textbox = gr.Textbox(value=initial_text_value, label="Action")
 
-    api_key.change(fn=lambda key: save_to_storage(API_KEY_FILE, key), inputs=api_key)
+    # api_key.change(fn=lambda key: save_to_storage(API_KEY_FILE, key), inputs=api_key)
 
     with gr.Row():
         # submit_button = gr.Button("Submit")  # Add submit button
@@ -569,10 +599,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         with gr.Column(scale=1, min_width=50):
             submit_button = gr.Button(value="Send", variant="primary")
 
-    chatbot = gr.Chatbot(label="Chatbot History", autoscroll=True, height=580)
+    chatbot = gr.Chatbot(label="Chatbot History", type="tuples", autoscroll=True, height=580, group_consecutive_messages=False)
     
-    model.change(fn=update_model, inputs=[model, state], outputs=[provider, api_key])
-    provider.change(fn=update_api_key_placeholder, inputs=[provider, model], outputs=api_key)
+    planner_model.change(fn=update_planner_model, inputs=[planner_model, state], outputs=[planner_api_provider, planner_api_key, actor_model])
+    planner_api_provider.change(fn=update_api_key_placeholder, inputs=[planner_api_provider, planner_model], outputs=planner_api_key)
+    actor_model.change(fn=update_actor_model, inputs=[actor_model, state], outputs=None)
+
     screen_selector.change(fn=update_selected_screen, inputs=[screen_selector, state], outputs=None)
     only_n_images.change(fn=update_only_n_images, inputs=[only_n_images, state], outputs=None)
     
@@ -589,4 +621,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     # chat_input.submit(process_input, [chat_input, state], chatbot)
     submit_button.click(process_input, [chat_input, state], chatbot)
 
-demo.launch(share=True, allowed_paths=["./"], server_port=7888)  # TODO: allowed_paths
+    planner_api_key.change(
+        fn=update_api_key,
+        inputs=[planner_api_key, state],
+        outputs=None
+    )
+
+demo.launch(share=False,
+            allowed_paths=["./"],
+            server_port=7888)  # TODO: allowed_paths
