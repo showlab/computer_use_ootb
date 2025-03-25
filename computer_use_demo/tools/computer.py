@@ -255,7 +255,58 @@ class ComputerTool(BaseAnthropicTool):
                 pyautogui.typewrite(text, interval=TYPING_DELAY_MS / 1000)  # Convert ms to seconds
                 screenshot_base64 = (await self.screenshot()).base64_image
                 return ToolResult(output=text, base64_image=screenshot_base64)
+           
+        # minimum modification to avoid disrupting the original flow, will be optimized later
+        # for support of Claude 3.7 Computer Use API
+        if action in ("scroll"):
+            if coordinate is None:
+                pyautogui.scroll(-10)
+                return ToolResult(output=f"Scrolled down")
+            else:
+                if self.is_scaling:
+                    x, y = self.scale_coordinates(
+                        ScalingSource.API, coordinate[0], coordinate[1]
+                    )
+                else:
+                    x, y = coordinate
 
+                # print(f"scaled_coordinates: {x}, {y}")
+                # print(f"offset: {self.offset_x}, {self.offset_y}")
+                
+                pyautogui.scroll(-10, x, y)
+                return ToolResult(output=f"Scrolled down at {x}, {y}")
+            
+        if action in ("left_click", "right_click", "double_click", "middle_click", "left_press"):
+            if coordinate is not None:
+                if self.is_scaling:
+                    x, y = self.scale_coordinates(
+                        ScalingSource.API, coordinate[0], coordinate[1]
+                    )
+                else:
+                    x, y = coordinate
+
+                # print(f"scaled_coordinates: {x}, {y}")
+                # print(f"offset: {self.offset_x}, {self.offset_y}")
+                
+                x += self.offset_x
+                y += self.offset_y
+
+                if action == "left_click":
+                    pyautogui.click(x, y)
+                elif action == "right_click":
+                    pyautogui.rightClick(x, y)
+                elif action == "double_click":
+                    pyautogui.doubleClick(x, y)
+                elif action == "middle_click":
+                    pyautogui.middleClick(x, y)
+                elif action == "left_press":
+                    pyautogui.mouseDown(x, y)
+                    time.sleep(1)
+                    pyautogui.mouseUp(x, y)
+                return ToolResult(output=f"Performed {action} at {x}, {y}")
+            else:
+                pass
+        
         if action in (
             "left_click",
             "right_click",
@@ -267,8 +318,8 @@ class ComputerTool(BaseAnthropicTool):
         ):
             if text is not None:
                 raise ToolError(f"text is not accepted for {action}")
-            if coordinate is not None:
-                raise ToolError(f"coordinate is not accepted for {action}")
+            # if coordinate is not None:
+            #     raise ToolError(f"coordinate is not accepted for {action}")
 
             if action == "screenshot":
                 return await self.screenshot()
@@ -276,20 +327,24 @@ class ComputerTool(BaseAnthropicTool):
                 x, y = pyautogui.position()
                 x, y = self.scale_coordinates(ScalingSource.COMPUTER, x, y)
                 return ToolResult(output=f"X={x},Y={y}")
+            # minimum modification to avoid disrupting the original flow, will be optimized later
             else:
-                if action == "left_click":
-                    pyautogui.click()
-                elif action == "right_click":
-                    pyautogui.rightClick()
-                elif action == "middle_click":
-                    pyautogui.middleClick()
-                elif action == "double_click":
-                    pyautogui.doubleClick()
-                elif action == "left_press":
-                    pyautogui.mouseDown()
-                    time.sleep(1)
-                    pyautogui.mouseUp()
-                return ToolResult(output=f"Performed {action}")
+                if coordinate is None:
+                    if action == "left_click":
+                        pyautogui.click()
+                    elif action == "right_click":
+                        pyautogui.rightClick()
+                    elif action == "middle_click":
+                        pyautogui.middleClick()
+                    elif action == "double_click":
+                        pyautogui.doubleClick()
+                    elif action == "left_press":
+                        pyautogui.mouseDown()
+                        time.sleep(1)
+                        pyautogui.mouseUp()
+                    return ToolResult(output=f"Performed {action}")
+                else:
+                    pass
             
         raise ToolError(f"Invalid action: {action}")
     
