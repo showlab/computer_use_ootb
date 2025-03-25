@@ -191,6 +191,8 @@ class ComputerTool(BaseAnthropicTool):
         action: Action,
         text: str | None = None,
         coordinate: tuple[int, int] | None = None,
+        scroll_direction: Literal["up", "down", "left", "right"] = "down",
+        scroll_amount: int = 10,
         **kwargs,
     ):  
         print(f"action: {action}, text: {text}, coordinate: {coordinate}")
@@ -260,8 +262,11 @@ class ComputerTool(BaseAnthropicTool):
         # for support of Claude 3.7 Computer Use API
         if action in ("scroll"):
             if coordinate is None:
-                pyautogui.scroll(-10)
-                return ToolResult(output=f"Scrolled down")
+                if scroll_direction in ("up", "down"):
+                    pyautogui.scroll(scroll_amount if scroll_direction == "up" else -scroll_amount)
+                elif scroll_direction in ("left", "right"):
+                    pyautogui.hscroll(scroll_amount if scroll_direction == "right" else -scroll_amount)
+                return ToolResult(output=f"Scrolled {scroll_direction}")
             else:
                 if self.is_scaling:
                     x, y = self.scale_coordinates(
@@ -273,8 +278,11 @@ class ComputerTool(BaseAnthropicTool):
                 # print(f"scaled_coordinates: {x}, {y}")
                 # print(f"offset: {self.offset_x}, {self.offset_y}")
                 
-                pyautogui.scroll(-10, x, y)
-                return ToolResult(output=f"Scrolled down at {x}, {y}")
+                if scroll_direction in ("up", "down"):
+                    pyautogui.scroll(scroll_amount if scroll_direction == "up" else -scroll_amount, x, y)
+                elif scroll_direction in ("left", "right"):
+                    pyautogui.hscroll(scroll_amount if scroll_direction == "right" else -scroll_amount, x, y)
+                return ToolResult(output=f"Scrolled {scroll_direction} at {x}, {y}")
             
         if action in ("left_click", "right_click", "double_click", "middle_click", "left_press"):
             if coordinate is not None:
