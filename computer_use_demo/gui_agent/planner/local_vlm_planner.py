@@ -24,6 +24,14 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 </SYSTEM_CAPABILITY>
 """
 
+MODEL_TO_HF_PATH = {
+    "qwen-vl-7b-instruct": "Qwen/Qwen2-VL-7B-Instruct",
+    "qwen2-vl-2b-instruct": "Qwen/Qwen2-VL-2B-Instruct",
+    "qwen2.5-vl-3b-instruct": "Qwen/Qwen2.5-VL-3B-Instruct",
+    "qwen2.5-vl-7b-instruct": "Qwen/Qwen2.5-VL-7B-Instruct",
+}
+
+
 class LocalVLMPlanner:
     def __init__(
         self,
@@ -39,38 +47,24 @@ class LocalVLMPlanner:
         device: torch.device = torch.device("cpu"),
     ):
         self.device = device
-        
         self.min_pixels = 256 * 28 * 28
         self.max_pixels = 1344 * 28 * 28
-        
-        if model == "qwen-vl-7b-instruct + ShowUI":  # local model
-            self.model_name = "qwen-vl-7b-instruct"
-            self.model = Qwen2VLForConditionalGeneration.from_pretrained(
-                # "Qwen/Qwen2-VL-7B-Instruct",
-                "./Qwen2-VL-7B-Instruct",
-                torch_dtype=torch.bfloat16,
-                device_map="cpu"
-            ).to(self.device)
-            self.processor = AutoProcessor.from_pretrained(
-                "./Qwen2-VL-7B-Instruct",
-                min_pixels=self.min_pixels,
-                max_pixels=self.max_pixels
-            )
-        elif model == "qwen2-vl-2b-instruct":
-            self.model_name = "qwen2-vl-2b-instruct"
-            self.model = Qwen2VLForConditionalGeneration.from_pretrained(
-                # "Qwen/Qwen2-VL-2B-Instruct",
-                "./Qwen2-VL-2B-Instruct",
-                torch_dtype=torch.bfloat16,
-                device_map="cpu"
-            ).to(self.device)
-            self.processor = AutoProcessor.from_pretrained(
-                "./Qwen2-VL-2B-Instruct",
-                min_pixels=self.min_pixels,
-                max_pixels=self.max_pixels
-            )
+        self.model_name = model
+        if model in MODEL_TO_HF_PATH:
+            self.hf_path = MODEL_TO_HF_PATH[model]
         else:
-            raise ValueError(f"Model {model} not supported")
+            raise ValueError(f"Model {model} not supported for local VLM planner")
+        
+        self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+            self.hf_path,
+            torch_dtype=torch.float16,
+            device_map="cpu"
+        ).to(self.device)
+        self.processor = AutoProcessor.from_pretrained(
+            self.hf_path,
+            min_pixels=self.min_pixels,
+            max_pixels=self.max_pixels
+        )
         
         self.provider = provider
         self.system_prompt_suffix = system_prompt_suffix
@@ -123,7 +117,7 @@ class LocalVLMPlanner:
             messages_for_processor, tokenize=False, add_generation_prompt=True
         )
         image_inputs, video_inputs = process_vision_info(messages_for_processor)
-        
+
         inputs = self.processor(
             text=[text],
             images=image_inputs,
@@ -208,57 +202,6 @@ IMPORTANT NOTES:
 5. When the task is completed, you should say "Next Action": "None" in the json field.
 """ 
 
-    
-
-def _maybe_filter_to_n_most_recent_images(
-    messages: list[BetaMessageParam],
-    images_to_keep: int,
-    min_removal_threshold: int = 10,
-):
-    """
-    With the assumption that images are screenshots that are of diminishing value as
-    the conversation progresses, remove all but the final `images_to_keep` tool_result
-    images in place, with a chunk of min_removal_threshold to reduce the amount we
-    break the implicit prompt cache.
-    """
-    if images_to_keep is None:
-        return messages
-
-    tool_result_blocks = cast(
-        list[ToolResultBlockParam],
-        [
-            item
-            for message in messages
-            for item in (
-                message["content"] if isinstance(message["content"], list) else []
-            )
-            if isinstance(item, dict) and item.get("type") == "tool_result"
-        ],
-    )
-
-    total_images = sum(
-        1
-        for tool_result in tool_result_blocks
-        for content in tool_result.get("content", [])
-        if isinstance(content, dict) and content.get("type") == "image"
-    )
-
-    images_to_remove = total_images - images_to_keep
-    # for better cache behavior, we want to remove in chunks
-    images_to_remove -= images_to_remove % min_removal_threshold
-
-    for tool_result in tool_result_blocks:
-        if isinstance(tool_result.get("content"), list):
-            new_content = []
-            for content in tool_result.get("content", []):
-                if isinstance(content, dict) and content.get("type") == "image":
-                    if images_to_remove > 0:
-                        images_to_remove -= 1
-                        continue
-                new_content.append(content)
-            tool_result["content"] = new_content
-
-
 def _message_filter_callback(messages):
     filtered_list = []
     try:
@@ -273,20 +216,6 @@ def _message_filter_callback(messages):
                 else:
                     print("[_message_filter_callback]: drop message", msg)
                     continue                
-
-            # elif msg.get('role') in ['assistant']:
-            #     if isinstance(msg["content"][0], TextBlock):
-            #         msg["content"][0] = str(msg["content"][0].text)
-            #     elif isinstance(msg["content"][0], BetaTextBlock):
-            #         msg["content"][0] = str(msg["content"][0].text)
-            #     elif isinstance(msg["content"][0], BetaToolUseBlock):
-            #         msg["content"][0] = str(msg['content'][0].input)
-            #     elif isinstance(msg["content"][0], Dict) and msg["content"][0]["content"][-1]["type"] == "image":
-            #         msg["content"][0] = f'<img src="data:image/png;base64,{msg["content"][0]["content"][-1]["source"]["data"]}">'
-            #     else:
-            #         print("[_message_filter_callback]: drop message", msg)
-            #         continue
-            #     filtered_list.append(msg["content"][0])  # User message
                 
             else:
                 print("[_message_filter_callback]: drop message", msg)
