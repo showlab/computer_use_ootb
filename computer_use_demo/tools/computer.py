@@ -133,7 +133,8 @@ class ComputerTool(BaseAnthropicTool):
         self.offset_y = 0
         self.selected_screen = selected_screen   
         self.is_scaling = is_scaling
-        self.width, self.height = self.get_screen_size()     
+        self.width, self.height = self.get_screen_size()  
+        self.width, self.height = int(self.width), int(self.height)
 
         # Path to cliclick
         self.cliclick = "cliclick"
@@ -577,6 +578,7 @@ class ComputerTool(BaseAnthropicTool):
 
     def scale_coordinates(self, source: ScalingSource, x: int, y: int):
         """Scale coordinates to a target maximum resolution."""
+        x, y = int(x), int(y)
         if not self._scaling_enabled:
             return x, y
         ratio = self.width / self.height
