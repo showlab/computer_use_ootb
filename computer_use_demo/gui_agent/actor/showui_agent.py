@@ -103,16 +103,30 @@ class ShowUIActor:
         self.output_callback(f'Screenshot for {colorful_text_showui}:\n<img src="data:image/png;base64,{image_base64}">', sender="bot")
 
         # Use system prompt, task, and action history to build the messages
-        messages_for_processor = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": self.system_prompt},
-                    {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels": self.max_pixels},
-                    {"type": "text", "text": f"Task: {task}"}
-                ],
-            }
-        ]
+        if len(self.action_history) == 0:
+            messages_for_processor = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": self.system_prompt},
+                        {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels": self.max_pixels},
+                        {"type": "text", "text": f"Task: {task}"}
+                    ],
+                }
+            ]
+        else:
+            # https://github.com/showlab/ShowUI/issues/5
+            messages_for_processor = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": self.system_prompt},
+                        {"type": "image", "image": screenshot_path, "min_pixels": self.min_pixels, "max_pixels": self.max_pixels},
+                        {"type": "text", "text": f"Task: {task}"},
+                        {"type": "text", "text": self.action_history},
+                    ],
+                }
+            ]
         
         text = self.processor.apply_chat_template(
             messages_for_processor, tokenize=False, add_generation_prompt=True,
