@@ -81,9 +81,26 @@ def get_screenshot(selected_screen: int = 0, resize: bool = True, target_width: 
             cmd = "xrandr | grep ' primary' | awk '{print $4}'"
             try:
                 output = subprocess.check_output(cmd, shell=True).decode()
-                resolution = output.strip().split()[0]
-                width, height = map(int, resolution.split('x'))
-                bbox = (0, 0, width, height)  # Assuming single primary screen for simplicity
+                resolution = output.strip()
+                # Parse the resolution format like "1920x1080+1920+0"
+                parts = resolution.split('+')[0]  # Get just the "1920x1080" part
+                width, height = map(int, parts.split('x'))
+                
+                # Create a screen object/dictionary similar to what's used in other platforms
+                # Extract the offsets from the resolution string
+                x_offset = int(resolution.split('+')[1]) if len(resolution.split('+')) > 1 else 0
+                y_offset = int(resolution.split('+')[2]) if len(resolution.split('+')) > 2 else 0
+                
+                # Create a screen object with attributes similar to the screeninfo.Monitor object
+                class LinuxScreen:
+                    def __init__(self, x, y, width, height):
+                        self.x = x
+                        self.y = y
+                        self.width = width
+                        self.height = height
+                
+                screen = LinuxScreen(x_offset, y_offset, width, height)
+                bbox = (x_offset, y_offset, x_offset + width, y_offset + height)
             except subprocess.CalledProcessError:
                 raise RuntimeError("Failed to get screen resolution on Linux.")
 
@@ -165,7 +182,8 @@ def _get_screen_size(selected_screen: int = 0):
         try:
             output = subprocess.check_output(cmd, shell=True).decode()
             resolution = output.strip().split()[0]
-            width, height = map(int, resolution.split('x'))
+            parts = resolution.split('+')[0]  # Get just the "1920x1080" part
+            width, height = map(int, parts.split('x'))
             return width, height
         except subprocess.CalledProcessError:
             raise RuntimeError("Failed to get screen resolution on Linux.")
