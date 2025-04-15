@@ -253,9 +253,15 @@ class ShowUIExecutor:
             cmd = "xrandr | grep ' primary' | awk '{print $4}'"
             try:
                 output = subprocess.check_output(cmd, shell=True).decode()
-                resolution = output.strip().split()[0]
-                width, height = map(int, resolution.split('x'))
-                bbox = (0, 0, width, height)  # Assuming single primary screen for simplicity
+                resolution = output.strip()
+                # Parse the resolution format like "1920x1080+1920+0"
+                # The format is "WIDTHxHEIGHT+X+Y"
+                parts = resolution.split('+')[0]  # Get just the "1920x1080" part
+                width, height = map(int, parts.split('x'))
+                # Get the X, Y offset if needed
+                x_offset = int(resolution.split('+')[1]) if len(resolution.split('+')) > 1 else 0
+                y_offset = int(resolution.split('+')[2]) if len(resolution.split('+')) > 2 else 0
+                bbox = (x_offset, y_offset, x_offset + width, y_offset + height)
             except subprocess.CalledProcessError:
                 raise RuntimeError("Failed to get screen resolution on Linux.")
         
