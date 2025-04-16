@@ -25,7 +25,7 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 """
 
 MODEL_TO_HF_PATH = {
-    "qwen-vl-7b-instruct": "Qwen/Qwen2-VL-7B-Instruct",
+    "qwen2-vl-7b-instruct": "Qwen/Qwen2-VL-7B-Instruct",
     "qwen2-vl-2b-instruct": "Qwen/Qwen2-VL-2B-Instruct",
     "qwen2.5-vl-3b-instruct": "Qwen/Qwen2.5-VL-3B-Instruct",
     "qwen2.5-vl-7b-instruct": "Qwen/Qwen2.5-VL-7B-Instruct",
