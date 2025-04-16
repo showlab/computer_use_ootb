@@ -134,7 +134,6 @@ def sampling_loop_sync(
             model=planner_model,
             provider=planner_provider,
             system_prompt_suffix=system_prompt_suffix,
-            api_key=api_key,
             api_response_callback=api_response_callback,
             selected_screen=selected_screen,
             output_callback=output_callback,
